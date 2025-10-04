@@ -48,6 +48,11 @@ export function CallInterface({
     .toUpperCase()
     .slice(0, 2);
 
+  const handleEndCall = () => {
+    localStorage.setItem("talkin_first_call_completed", "true");
+    onEndCall?.();
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-primary/20 via-background to-background flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
@@ -95,7 +100,7 @@ export function CallInterface({
           variant="destructive"
           size="icon"
           className="w-16 h-16 rounded-full"
-          onClick={onEndCall}
+          onClick={handleEndCall}
           data-testid="button-end-call"
         >
           <Phone className="w-6 h-6" />
