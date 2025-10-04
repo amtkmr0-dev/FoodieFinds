@@ -73,6 +73,11 @@ Preferred communication style: Simple, everyday language.
 - Build process: Vite for client, esbuild for server bundling
 
 **Authentication & Sessions**
+- **OTP-based passwordless authentication** - Mobile number only registration
+- **Auto-generated usernames** - System creates random unique usernames (e.g., "SwiftHawk1234")
+- **Device-ID fast login** - Instant login for recognized devices without OTP
+- Users cannot choose or edit their username
+- Email is optional and can be added after registration for notifications only
 - Infrastructure for session management via connect-pg-simple (PostgreSQL session store)
 - Session-based authentication pattern (not JWT)
 - Cookie-based credentials with "include" fetch mode

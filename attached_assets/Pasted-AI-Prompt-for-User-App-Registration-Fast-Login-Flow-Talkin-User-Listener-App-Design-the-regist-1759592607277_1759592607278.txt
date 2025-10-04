@@ -1,0 +1,51 @@
+AI Prompt for User App Registration & Fast Login Flow (Talkin User Listener App):
+
+Design the registration and login system as follows:
+
+Registration (Onboarding):
+
+Allow users to register via mobile number only.
+
+Send a one-time password (OTP) for direct login (no password required).
+
+After OTP verification, automatically and randomly generate a unique username for each registered user; users can't choose or edit their username.
+
+Fast Login:
+
+Enable device-ID based login for returning users who have already registered—no password, no OTP required if device is recognized.
+
+Optionally allow email addition after registration for notifications, but not for login.
+
+Recharge Flow:
+
+Prominently display recharge options post-registration and within the app (homepage, during calls, and wherever balance is shown).
+
+Require users to maintain a minimum balance (e.g., 3 minutes of talk time) in INR to initiate calls.
+
+Integrate secure payments for instant recharge; show currency strictly in INR.
+
+After successful recharge, update balance instantly and allow users to begin or continue calls.
+
+Constraints: Ensure entire flow is smooth, secure, and requires minimal steps. No coins, passwords, or manual username entry. Login must be instant through OTP or device recognition.Here’s an AI prompt tailored to your requirements for the Talkin User app registration and login flow:
+
+Design a user registration and login system for a social calling app:
+
+Users sign up using their mobile number, receiving an OTP for direct, passwordless login.
+
+After OTP verification, the system should automatically generate a random, unique username for each user—no manual username selection or editing.
+
+Enable fast login for returning users based on device ID (no OTP or password needed if recognized).
+
+Optionally let users add their email for notifications after registration, but not for login.
+
+Upon successful registration or login, present recharge options prominently:
+
+Display only INR currency.
+
+Allow instant recharge via secure payment methods.
+
+Mandate a minimum balance (e.g., equivalent to 3 minutes of talk time) before calls can be initiated.
+
+Update balance immediately after recharge; show the new balance clearly.
+
+The overall flow should minimize user steps, require no passwords or coin systems, and make login and call initiation quick and effortless.
