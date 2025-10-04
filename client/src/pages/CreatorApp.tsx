@@ -94,6 +94,26 @@ export default function CreatorApp() {
     { id: 3, name: "Priya Singh", earnings: 4120, calls: 35, status: "offline", commission: 824 },
   ];
 
+  const topCreators = [
+    { id: 1, rank: 1, name: "StarHost_Pro", earnings: 125000, calls: 890, pkWins: 156, followers: 45000 },
+    { id: 2, rank: 2, name: "TalkQueen_24", earnings: 118000, calls: 820, pkWins: 142, followers: 38000 },
+    { id: 3, rank: 3, name: "VoiceMaster", earnings: 112000, calls: 795, pkWins: 135, followers: 35000 },
+    { id: 4, rank: 4, name: "ChatKing_89", earnings: 98000, calls: 710, pkWins: 118, followers: 28000 },
+    { id: 5, rank: 5, name: "LiveStar_Pro", earnings: 92000, calls: 680, pkWins: 110, followers: 25000 },
+  ];
+
+  const topEarners = [
+    { id: 1, name: "DiamondHost", amount: 15400, period: "Today" },
+    { id: 2, name: "GoldenVoice", amount: 12800, period: "Today" },
+    { id: 3, name: "ProTalker", amount: 10200, period: "Today" },
+  ];
+
+  const topPKPlayers = [
+    { id: 1, name: "BattleChamp", wins: 245, losses: 45, winRate: 84.5 },
+    { id: 2, name: "PKMaster_X", wins: 210, losses: 60, winRate: 77.8 },
+    { id: 3, name: "FightStar", wins: 195, losses: 55, winRate: 78.0 },
+  ];
+
   const handleGoLive = () => {
     setIsLive(!isLive);
   };
@@ -131,7 +151,7 @@ export default function CreatorApp() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-5">
+          <TabsList className="grid w-full grid-cols-6">
             <TabsTrigger value="dashboard" data-testid="tab-dashboard">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -143,6 +163,10 @@ export default function CreatorApp() {
             <TabsTrigger value="pk-battles" data-testid="tab-pk-battles">
               <Trophy className="w-4 h-4 mr-2" />
               PK Battles
+            </TabsTrigger>
+            <TabsTrigger value="leaderboard" data-testid="tab-leaderboard">
+              <Award className="w-4 h-4 mr-2" />
+              Rankings
             </TabsTrigger>
             <TabsTrigger value="gifts" data-testid="tab-gifts">
               <Gift className="w-4 h-4 mr-2" />
@@ -458,6 +482,168 @@ export default function CreatorApp() {
                       </div>
                     ))}
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Leaderboard & Rankings Tab */}
+          <TabsContent value="leaderboard" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Award className="w-5 h-5 text-primary" />
+                  Top Creators Leaderboard
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {topCreators.map((creator) => (
+                  <div
+                    key={creator.id}
+                    className={`flex items-center justify-between p-4 rounded-lg ${
+                      creator.rank <= 3
+                        ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
+                        : "bg-secondary"
+                    }`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                        {creator.rank === 1 && <Crown className="w-6 h-6 text-yellow-500" />}
+                        {creator.rank === 2 && <Award className="w-6 h-6 text-gray-400" />}
+                        {creator.rank === 3 && <Award className="w-6 h-6 text-orange-400" />}
+                        {creator.rank > 3 && (
+                          <span className="font-bold text-lg">#{creator.rank}</span>
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-semibold">{creator.name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {creator.followers.toLocaleString()} followers
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="font-bold">₹{creator.earnings.toLocaleString()}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {creator.calls} calls • {creator.pkWins} PK wins
+                      </p>
+                    </div>
+                  </div>
+                ))}
+
+                {creatorStats.rank <= 100 && (
+                  <>
+                    <Separator />
+                    <div className="flex items-center justify-between p-4 bg-primary/10 rounded-lg border border-primary/20">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="font-bold text-lg">#{creatorStats.rank}</span>
+                        </div>
+                        <div>
+                          <p className="font-semibold">You</p>
+                          <p className="text-sm text-muted-foreground">
+                            {creatorStats.followers.toLocaleString()} followers
+                          </p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">₹{creatorStats.earningsThisMonth.toLocaleString()}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {creatorStats.totalCalls} calls • {creatorStats.pkWins} PK wins
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
+              </CardContent>
+            </Card>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Top Earners Today */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <DollarSign className="w-4 h-4 text-primary" />
+                    Top Earners Today
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {topEarners.map((earner, index) => (
+                    <div key={earner.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="font-bold">#{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{earner.name}</p>
+                          <p className="text-xs text-muted-foreground">{earner.period}</p>
+                        </div>
+                      </div>
+                      <Badge variant="outline">₹{earner.amount.toLocaleString()}</Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              {/* Top PK Players */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 text-base">
+                    <Trophy className="w-4 h-4 text-primary" />
+                    Top PK Champions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {topPKPlayers.map((player, index) => (
+                    <div key={player.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                          <span className="font-bold">#{index + 1}</span>
+                        </div>
+                        <div>
+                          <p className="font-medium">{player.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {player.wins}W - {player.losses}L
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant="outline" className="bg-green-500/10">
+                        {player.winRate}%
+                      </Badge>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Discovery Section */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Target className="w-5 h-5 text-primary" />
+                  Discover Creators
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {[1, 2, 3].map((i) => (
+                    <Card key={i} className="hover-elevate cursor-pointer">
+                      <CardContent className="pt-6 text-center">
+                        <Avatar className="w-16 h-16 mx-auto mb-3">
+                          <AvatarFallback>C{i}</AvatarFallback>
+                        </Avatar>
+                        <h4 className="font-semibold mb-1">Creator_{i * 100}</h4>
+                        <p className="text-sm text-muted-foreground mb-2">₹{40 + i * 5}/min</p>
+                        <Badge variant="secondary" className="mb-3">
+                          {(1000 + i * 500).toLocaleString()} followers
+                        </Badge>
+                        <Button size="sm" className="w-full" data-testid={`button-challenge-creator-${i}`}>
+                          <Zap className="w-3 h-3 mr-2" />
+                          Challenge to PK
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  ))}
                 </div>
               </CardContent>
             </Card>
