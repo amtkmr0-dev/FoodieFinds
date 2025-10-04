@@ -9,6 +9,13 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
   Wallet,
   Users,
   Gift,
@@ -41,6 +48,7 @@ export default function CreatorApp() {
   const [role, setRole] = useState<"creator" | "agency">("creator");
   const [isLive, setIsLive] = useState(false);
   const [selectedTab, setSelectedTab] = useState("dashboard");
+  const [selectedFilter, setSelectedFilter] = useState<string>("none");
 
   // Mock data
   const creatorStats = {
@@ -112,6 +120,15 @@ export default function CreatorApp() {
     { id: 1, name: "BattleChamp", wins: 245, losses: 45, winRate: 84.5 },
     { id: 2, name: "PKMaster_X", wins: 210, losses: 60, winRate: 77.8 },
     { id: 3, name: "FightStar", wins: 195, losses: 55, winRate: 78.0 },
+  ];
+
+  const beautyFilters = [
+    { id: "none", name: "None", description: "No filter" },
+    { id: "smooth", name: "Smooth Skin", description: "Face beautification" },
+    { id: "bright", name: "Brighten", description: "Enhance brightness" },
+    { id: "natural", name: "Natural Glow", description: "Soft glow effect" },
+    { id: "rosy", name: "Rosy Cheeks", description: "Add blush effect" },
+    { id: "glamour", name: "Glamour", description: "Full makeup look" },
   ];
 
   const handleGoLive = () => {
@@ -367,10 +384,47 @@ export default function CreatorApp() {
                           <Mic className="w-4 h-4 mr-2" />
                           Microphone
                         </Button>
-                        <Button variant="outline" size="sm" className="flex-1" data-testid="button-filters">
-                          <Sparkles className="w-4 h-4 mr-2" />
-                          Filters
-                        </Button>
+                        
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button variant="outline" size="sm" className="flex-1" data-testid="button-filters">
+                              <Sparkles className="w-4 h-4 mr-2" />
+                              Filters
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent className="max-w-md">
+                            <DialogHeader>
+                              <DialogTitle className="flex items-center gap-2">
+                                <Sparkles className="w-5 h-5 text-primary" />
+                                Beauty Filters & Effects
+                              </DialogTitle>
+                            </DialogHeader>
+                            <div className="space-y-3 mt-4">
+                              {beautyFilters.map((filter) => (
+                                <div
+                                  key={filter.id}
+                                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
+                                    selectedFilter === filter.id
+                                      ? "bg-primary/10 border-primary"
+                                      : "bg-secondary border-transparent hover-elevate"
+                                  }`}
+                                  onClick={() => setSelectedFilter(filter.id)}
+                                  data-testid={`filter-${filter.id}`}
+                                >
+                                  <div className="flex items-center justify-between">
+                                    <div>
+                                      <p className="font-semibold">{filter.name}</p>
+                                      <p className="text-sm text-muted-foreground">{filter.description}</p>
+                                    </div>
+                                    {selectedFilter === filter.id && (
+                                      <Badge variant="default" className="ml-2">Active</Badge>
+                                    )}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </DialogContent>
+                        </Dialog>
                       </div>
                     </div>
 
