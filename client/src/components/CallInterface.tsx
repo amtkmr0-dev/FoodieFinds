@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Gift, Wallet, X } from "lucide-react";
+import { PhoneOff, Gift, Wallet } from "lucide-react";
 
 interface CallInterfaceProps {
   creatorName: string;
@@ -77,34 +77,37 @@ export function CallInterface({
         </div>
       </div>
 
-      <div className="p-6 pb-8 flex gap-3">
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={onSendGift}
-          data-testid="button-send-gift"
-        >
-          <Gift className="w-5 h-5 mr-2" />
-          Send Gift
-        </Button>
-        <Button
-          variant="outline"
-          className="flex-1"
-          onClick={onRecharge}
-          data-testid="button-recharge"
-        >
-          <Wallet className="w-5 h-5 mr-2" />
-          Recharge
-        </Button>
+      <div className="p-6 pb-8 space-y-3">
         <Button
           variant="destructive"
-          size="icon"
-          className="w-16 h-16 rounded-full"
+          className="w-full h-14 text-lg"
           onClick={handleEndCall}
           data-testid="button-end-call"
         >
-          <Phone className="w-6 h-6" />
+          <PhoneOff className="w-6 h-6 mr-2" />
+          End Call
         </Button>
+        
+        <div className="flex gap-3">
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onSendGift}
+            data-testid="button-send-gift"
+          >
+            <Gift className="w-5 h-5 mr-2" />
+            Send Gift
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1"
+            onClick={onRecharge}
+            data-testid="button-recharge"
+          >
+            <Wallet className="w-5 h-5 mr-2" />
+            Recharge
+          </Button>
+        </div>
       </div>
     </div>
   );
