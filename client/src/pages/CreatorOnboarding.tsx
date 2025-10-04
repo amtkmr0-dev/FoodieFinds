@@ -10,9 +10,12 @@ import { User, CreditCard, FileText, Gift, CheckCircle2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function CreatorOnboarding() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  
+  // Determine role based on current URL
+  const role = location.includes("/agent/") ? "agent" : "creator";
   
   const [formData, setFormData] = useState({
     name: "",
@@ -70,8 +73,14 @@ export default function CreatorOnboarding() {
   };
 
   const handleSubmit = () => {
-    localStorage.setItem("creator_registered", "true");
-    localStorage.setItem("creator_approval_status", "pending");
+    // Store registration data based on role
+    if (role === "creator") {
+      localStorage.setItem("creator_registered", "true");
+      localStorage.setItem("creator_approval_status", "pending");
+    } else {
+      localStorage.setItem("agent_registered", "true");
+      localStorage.setItem("agent_approval_status", "pending");
+    }
     
     toast({
       title: "Registration Submitted",
@@ -79,7 +88,7 @@ export default function CreatorOnboarding() {
     });
 
     setTimeout(() => {
-      setLocation("/creator/pending-approval");
+      setLocation(role === "creator" ? "/creator/pending-approval" : "/agent/pending-approval");
     }, 1500);
   };
 
@@ -95,7 +104,7 @@ export default function CreatorOnboarding() {
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between mb-4">
-              <CardTitle>Creator Registration</CardTitle>
+              <CardTitle>{role === "creator" ? "Creator" : "Agent"} Registration</CardTitle>
               <span className="text-sm text-muted-foreground">Step {step} of 4</span>
             </div>
             <Progress value={progressPercentage} className="h-2" />
