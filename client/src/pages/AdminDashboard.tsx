@@ -1,11 +1,33 @@
-import { useState } from "react";
-import { StatsCard } from "@/components/StatsCard";
-import { UserListItem } from "@/components/UserListItem";
-import { ApprovalItem } from "@/components/ApprovalItem";
-import { ThemeToggle } from "@/components/ThemeToggle";
+import { useState, useEffect } from "react";
+import { useLocation } from "wouter";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/ThemeToggle";
+import { Separator } from "@/components/ui/separator";
+import { 
+  Shield, 
+  Users, 
+  FileCheck, 
+  DollarSign, 
+  Percent,
+  UserPlus,
+  MessageSquare,
+  Settings,
+  LogOut,
+  CheckCircle,
+  XCircle,
+  Clock,
+  Ban,
+  Phone,
+  Mail,
+  CreditCard,
+  FileText
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 import {
   Select,
   SelectContent,
@@ -13,202 +35,794 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, DollarSign, UserPlus, TrendingUp, Send, Wallet, FileText, Download } from "lucide-react";
-import { useLocation } from "wouter";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
-  const [timeFilter, setTimeFilter] = useState("today");
+  const { toast } = useToast();
+  
+  // Authentication guard - redirect if not authenticated
+  useEffect(() => {
+    const isAuthenticated = localStorage.getItem("admin_registered") === "true";
+    if (!isAuthenticated) {
+      toast({
+        title: "Unauthorized Access",
+        description: "Please log in to access the admin dashboard.",
+        variant: "destructive",
+      });
+      setLocation("/admin/login");
+    }
+  }, [setLocation, toast]);
+  
+  // Get admin role from localStorage - no default fallback (will redirect above if not set)
+  const adminRole = (localStorage.getItem("admin_role") || "") as "super_user" | "admin" | "support";
+  const adminName = localStorage.getItem("admin_name") || "Admin User";
+  
+  // Don't render if not authenticated
+  if (localStorage.getItem("admin_registered") !== "true") {
+    return null;
+  }
+  
+  const [selectedTab, setSelectedTab] = useState("kyc");
+  const [showRejectDialog, setShowRejectDialog] = useState(false);
+  const [showAddAdminDialog, setShowAddAdminDialog] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [selectedProfile, setSelectedProfile] = useState<any>(null);
+  
+  // Pricing state
+  const [creatorRates, setCreatorRates] = useState<Record<string, number>>({});
+  const [agencyCommissions, setAgencyCommissions] = useState<Record<string, number>>({});
 
-  const stats = [
-    {
-      title: "Total Signups",
-      value: "12,543",
-      icon: UserPlus,
-      trend: { value: 12.5, isPositive: true },
-    },
-    {
-      title: "Recharges Today",
-      value: "₹45,230",
-      icon: DollarSign,
-      trend: { value: 8.2, isPositive: true },
-    },
-    {
-      title: "Active Users",
-      value: "8,234",
-      icon: Users,
-      trend: { value: 5.3, isPositive: true },
-    },
-    {
-      title: "Net Revenue",
-      value: "₹38,500",
-      icon: TrendingUp,
-      trend: { value: 15.7, isPositive: true },
-    },
-  ];
-
-  const users = [
+  // Mock data for pending KYC approvals
+  const pendingCreators = [
     {
       id: "1",
-      name: "Rahul Sharma",
-      phone: "+91 98765 43210",
-      balance: 450,
-      lastSeen: "2 hours ago",
+      name: "Ravi Kumar",
+      mobile: "+91 9876543210",
+      email: "ravi@example.com",
+      role: "creator",
+      bankAccount: "1234567890",
+      ifsc: "SBIN0001234",
+      aadhar: "XXXX XXXX 1234",
+      pan: "ABCDE1234F",
+      referralCode: "RAVI2024",
+      submittedAt: "2024-01-03",
+      currentRate: 45,
     },
     {
       id: "2",
-      name: "Priya Patel",
-      phone: "+91 98765 43211",
-      balance: 125,
-      status: "blocked" as const,
-      lastSeen: "1 day ago",
+      name: "Priya Sharma",
+      mobile: "+91 9988776655",
+      email: "priya@example.com",
+      role: "creator",
+      bankAccount: "9876543210",
+      ifsc: "HDFC0001234",
+      aadhar: "XXXX XXXX 5678",
+      pan: "PQRST5678K",
+      referralCode: "PRIYA2024",
+      submittedAt: "2024-01-03",
+      currentRate: 50,
     },
   ];
 
-  const approvals = [
+  const pendingAgents = [
+    {
+      id: "3",
+      name: "Agency Pro",
+      mobile: "+91 8877665544",
+      email: "agencypro@example.com",
+      role: "agent",
+      bankAccount: "5544332211",
+      ifsc: "ICIC0001234",
+      aadhar: "XXXX XXXX 9012",
+      pan: "WXYZ9012M",
+      referralCode: "AGENCY2024",
+      submittedAt: "2024-01-03",
+      currentCommission: 20,
+    },
+  ];
+
+  const approvedCreators = [
+    {
+      id: "4",
+      name: "Sarah Johnson",
+      mobile: "+91 9876543210",
+      email: "sarah@example.com",
+      currentRate: 45,
+      status: "approved",
+    },
+    {
+      id: "5",
+      name: "Mike Chen",
+      mobile: "+91 8765432109",
+      email: "mike@example.com",
+      currentRate: 55,
+      status: "approved",
+    },
+  ];
+
+  const approvedAgents = [
+    {
+      id: "6",
+      name: "Elite Agency",
+      mobile: "+91 7654321098",
+      email: "elite@example.com",
+      currentCommission: 20,
+      status: "approved",
+    },
+  ];
+
+  const admins = [
     {
       id: "1",
-      creatorName: "Sarah Johnson",
-      type: "kyc" as const,
-      status: "pending" as const,
-      details: "Updated Aadhar & PAN documents",
-      timestamp: "2 hours ago",
+      name: "Super Admin",
+      mobile: "+91 9999999999",
+      email: "super@talkin.com",
+      role: "super_user",
+      isActive: true,
+      createdAt: "2024-01-01",
     },
     {
       id: "2",
-      creatorName: "Rahul Verma",
-      type: "profile" as const,
-      status: "approved" as const,
-      details: "Profile picture changed",
-      timestamp: "1 day ago",
+      name: "Admin User",
+      mobile: "+91 8888888888",
+      email: "admin@talkin.com",
+      role: "admin",
+      isActive: true,
+      createdAt: "2024-01-02",
+    },
+    {
+      id: "3",
+      name: "Support Agent",
+      mobile: "+91 7777777777",
+      email: "support@talkin.com",
+      role: "support",
+      isActive: true,
+      createdAt: "2024-01-02",
     },
   ];
+
+  const supportTickets = [
+    {
+      id: "1",
+      userName: "John Doe",
+      userMobile: "+91 9876543210",
+      subject: "Payment not received",
+      message: "I withdrew ₹1000 but haven't received it in my account yet.",
+      status: "open",
+      priority: "high",
+      createdAt: "2024-01-03 10:30",
+    },
+    {
+      id: "2",
+      userName: "Jane Smith",
+      userMobile: "+91 8765432109",
+      subject: "Account verification issue",
+      message: "My KYC documents were rejected. Can you help?",
+      status: "in_progress",
+      priority: "medium",
+      createdAt: "2024-01-03 09:15",
+    },
+  ];
+
+  const handleApprove = (profile: any) => {
+    localStorage.setItem(`${profile.role}_approval_${profile.id}`, "approved");
+    toast({
+      title: "Application Approved",
+      description: `${profile.name} has been approved as a ${profile.role}.`,
+    });
+  };
+
+  const handleReject = () => {
+    if (!rejectionReason.trim()) {
+      toast({
+        title: "Rejection Reason Required",
+        description: "Please provide a reason for rejection.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    localStorage.setItem(`${selectedProfile.role}_approval_${selectedProfile.id}`, "rejected");
+    localStorage.setItem(`${selectedProfile.role}_rejection_${selectedProfile.id}`, rejectionReason);
+    
+    toast({
+      title: "Application Rejected",
+      description: `${selectedProfile.name}'s application has been rejected.`,
+    });
+    
+    setShowRejectDialog(false);
+    setRejectionReason("");
+    setSelectedProfile(null);
+  };
+
+  const handleBan = (profile: any) => {
+    if (confirm(`Are you sure you want to permanently ban ${profile.name}? This action cannot be undone.`)) {
+      localStorage.setItem(`${profile.role}_approval_${profile.id}`, "banned");
+      toast({
+        title: "User Banned",
+        description: `${profile.name} has been permanently banned from the platform.`,
+        variant: "destructive",
+      });
+    }
+  };
+
+  const openRejectDialog = (profile: any) => {
+    setSelectedProfile(profile);
+    setShowRejectDialog(true);
+  };
+
+  const handleUpdateRate = (creatorId: string, creatorName: string) => {
+    const newRate = creatorRates[creatorId];
+    if (!newRate || newRate <= 0) {
+      toast({
+        title: "Invalid Rate",
+        description: "Please enter a valid per-minute rate.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save to localStorage (in production would be API call)
+    localStorage.setItem(`creator_rate_${creatorId}`, newRate.toString());
+    
+    toast({
+      title: "Rate Updated",
+      description: `${creatorName}'s rate has been updated to ₹${newRate}/min.`,
+    });
+
+    // Clear input
+    setCreatorRates({ ...creatorRates, [creatorId]: 0 });
+  };
+
+  const handleUpdateCommission = (agencyId: string, agencyName: string) => {
+    const newCommission = agencyCommissions[agencyId];
+    if (!newCommission || newCommission <= 0 || newCommission > 100) {
+      toast({
+        title: "Invalid Commission",
+        description: "Please enter a valid commission percentage (1-100).",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Save to localStorage (in production would be API call)
+    localStorage.setItem(`agency_commission_${agencyId}`, newCommission.toString());
+    
+    toast({
+      title: "Commission Updated",
+      description: `${agencyName}'s commission has been updated to ${newCommission}%.`,
+    });
+
+    // Clear input
+    setAgencyCommissions({ ...agencyCommissions, [agencyId]: 0 });
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem("admin_registered");
+    localStorage.removeItem("admin_role");
+    localStorage.removeItem("admin_name");
+    toast({
+      title: "Logged Out",
+      description: "You have been successfully logged out.",
+    });
+    setTimeout(() => {
+      setLocation("/admin/login");
+    }, 1000);
+  };
+
+  // Role-based navigation visibility
+  const canSeeKYC = adminRole === "super_user" || adminRole === "admin";
+  const canSeePricing = adminRole === "super_user" || adminRole === "admin";
+  const canSeeAdmins = adminRole === "super_user";
+  const canSeeSupport = true; // All roles can see support
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card border-b px-6 py-4">
+    <div className="min-h-screen bg-background pb-20">
+      {/* Header */}
+      <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
-            <Select value={timeFilter} onValueChange={setTimeFilter}>
-              <SelectTrigger className="w-32" data-testid="select-time-filter">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="today">Today</SelectItem>
-                <SelectItem value="yesterday">Yesterday</SelectItem>
-                <SelectItem value="weekly">Weekly</SelectItem>
-              </SelectContent>
-            </Select>
+            <Shield className="w-6 h-6 text-primary" />
+            <div>
+              <h1 className="text-xl font-bold">Admin Dashboard</h1>
+              <p className="text-sm text-muted-foreground">{adminName} ({adminRole.replace("_", " ")})</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <ThemeToggle />
+            <Button variant="ghost" size="icon" onClick={handleLogout} data-testid="button-logout">
+              <LogOut className="w-5 h-5" />
+            </Button>
           </div>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-6 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          {stats.map((stat) => (
-            <StatsCard key={stat.title} {...stat} />
-          ))}
-        </div>
-
-        <Tabs defaultValue="users" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="users" data-testid="tab-users">
-              User Management
-            </TabsTrigger>
-            <TabsTrigger value="approvals" data-testid="tab-approvals">
-              Approvals
-            </TabsTrigger>
-            <TabsTrigger value="finance" data-testid="tab-finance">
-              Finance
-            </TabsTrigger>
+      <main className="max-w-7xl mx-auto px-4 py-6">
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${[canSeeKYC, canSeePricing, canSeeAdmins, canSeeSupport].filter(Boolean).length}, 1fr)` }}>
+            {canSeeKYC && (
+              <TabsTrigger value="kyc" data-testid="tab-kyc">
+                <FileCheck className="w-4 h-4 mr-2" />
+                KYC Approvals
+              </TabsTrigger>
+            )}
+            {canSeePricing && (
+              <TabsTrigger value="pricing" data-testid="tab-pricing">
+                <DollarSign className="w-4 h-4 mr-2" />
+                Pricing
+              </TabsTrigger>
+            )}
+            {canSeeAdmins && (
+              <TabsTrigger value="admins" data-testid="tab-admins">
+                <UserPlus className="w-4 h-4 mr-2" />
+                Admin Management
+              </TabsTrigger>
+            )}
+            {canSeeSupport && (
+              <TabsTrigger value="support" data-testid="tab-support">
+                <MessageSquare className="w-4 h-4 mr-2" />
+                Support
+              </TabsTrigger>
+            )}
           </TabsList>
 
-          <TabsContent value="users">
-            <div className="border rounded-xl overflow-hidden">
-              <div className="p-4 bg-card border-b">
-                <h3 className="font-semibold">All Users</h3>
-              </div>
-              {users.map((user) => (
-                <UserListItem
-                  key={user.id}
-                  {...user}
-                  onChat={() => console.log("Chat with", user.name)}
-                  onBlock={() => console.log("Block", user.name)}
-                />
-              ))}
-            </div>
-          </TabsContent>
+          {/* KYC Approvals Tab */}
+          {canSeeKYC && (
+            <TabsContent value="kyc" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileCheck className="w-5 h-5 text-primary" />
+                    Pending Creator Applications
+                  </CardTitle>
+                  <CardDescription>Review and approve/reject creator registrations</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {pendingCreators.map((creator) => (
+                    <Card key={creator.id}>
+                      <CardContent className="pt-6">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Name</Label>
+                              <p className="font-medium">{creator.name}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Contact</Label>
+                              <p className="text-sm">{creator.mobile}</p>
+                              <p className="text-sm text-muted-foreground">{creator.email}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Bank Details</Label>
+                              <p className="text-sm">Account: {creator.bankAccount}</p>
+                              <p className="text-sm">IFSC: {creator.ifsc}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">KYC Documents</Label>
+                              <p className="text-sm">Aadhar: {creator.aadhar}</p>
+                              <p className="text-sm">PAN: {creator.pan}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Referral Code</Label>
+                              <p className="text-sm font-mono">{creator.referralCode}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Submitted</Label>
+                              <p className="text-sm">{creator.submittedAt}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Separator className="my-4" />
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => handleApprove(creator)}
+                            className="bg-green-600 hover:bg-green-700"
+                            data-testid={`button-approve-${creator.id}`}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Approve
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            onClick={() => openRejectDialog(creator)}
+                            data-testid={`button-reject-${creator.id}`}
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Reject
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            className="border-red-600 text-red-600 hover:bg-red-50"
+                            onClick={() => handleBan(creator)}
+                            data-testid={`button-ban-${creator.id}`}
+                          >
+                            <Ban className="w-4 h-4 mr-2" />
+                            Ban
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
 
-          <TabsContent value="approvals">
-            <div className="border rounded-xl overflow-hidden">
-              <div className="p-4 bg-card border-b">
-                <h3 className="font-semibold">Pending Approvals</h3>
-              </div>
-              {approvals.map((approval) => (
-                <ApprovalItem
-                  key={approval.id}
-                  {...approval}
-                  onApprove={() => console.log("Approved", approval.creatorName)}
-                  onReject={() => console.log("Rejected", approval.creatorName)}
-                />
-              ))}
-            </div>
-          </TabsContent>
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileCheck className="w-5 h-5 text-primary" />
+                    Pending Agency Applications
+                  </CardTitle>
+                  <CardDescription>Review and approve/reject agency registrations</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {pendingAgents.map((agent) => (
+                    <Card key={agent.id}>
+                      <CardContent className="pt-6">
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Agency Name</Label>
+                              <p className="font-medium">{agent.name}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Contact</Label>
+                              <p className="text-sm">{agent.mobile}</p>
+                              <p className="text-sm text-muted-foreground">{agent.email}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Bank Details</Label>
+                              <p className="text-sm">Account: {agent.bankAccount}</p>
+                              <p className="text-sm">IFSC: {agent.ifsc}</p>
+                            </div>
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <Label className="text-sm text-muted-foreground">KYC Documents</Label>
+                              <p className="text-sm">Aadhar: {agent.aadhar}</p>
+                              <p className="text-sm">PAN: {agent.pan}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Referral Code</Label>
+                              <p className="text-sm font-mono">{agent.referralCode}</p>
+                            </div>
+                            <div>
+                              <Label className="text-sm text-muted-foreground">Submitted</Label>
+                              <p className="text-sm">{agent.submittedAt}</p>
+                            </div>
+                          </div>
+                        </div>
+                        <Separator className="my-4" />
+                        <div className="flex gap-2">
+                          <Button 
+                            onClick={() => handleApprove(agent)}
+                            className="bg-green-600 hover:bg-green-700"
+                            data-testid={`button-approve-${agent.id}`}
+                          >
+                            <CheckCircle className="w-4 h-4 mr-2" />
+                            Approve
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            onClick={() => openRejectDialog(agent)}
+                            data-testid={`button-reject-${agent.id}`}
+                          >
+                            <XCircle className="w-4 h-4 mr-2" />
+                            Reject
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            className="border-red-600 text-red-600 hover:bg-red-50"
+                            onClick={() => handleBan(agent)}
+                            data-testid={`button-ban-${agent.id}`}
+                          >
+                            <Ban className="w-4 h-4 mr-2" />
+                            Ban
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-          <TabsContent value="finance">
-            <div className="space-y-6">
-              <div className="border rounded-xl p-6">
-                <h3 className="font-semibold mb-4">Financial Overview</h3>
-                <div className="space-y-4">
-                  <div className="flex justify-between p-4 bg-secondary rounded-lg">
-                    <span className="text-muted-foreground">Total Revenue</span>
-                    <span className="font-semibold">₹1,23,450</span>
+          {/* Pricing Tab */}
+          {canSeePricing && (
+            <TabsContent value="pricing" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="w-5 h-5 text-primary" />
+                    Creator Per-Minute Rates
+                  </CardTitle>
+                  <CardDescription>Manage pricing for approved creators</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {approvedCreators.map((creator) => (
+                    <div key={creator.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                      <div>
+                        <p className="font-medium">{creator.name}</p>
+                        <p className="text-sm text-muted-foreground">{creator.mobile}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Current Rate</p>
+                          <p className="text-lg font-bold">₹{localStorage.getItem(`creator_rate_${creator.id}`) || creator.currentRate}/min</p>
+                        </div>
+                        <Input
+                          type="number"
+                          placeholder="New rate"
+                          className="w-32"
+                          value={creatorRates[creator.id] || ""}
+                          onChange={(e) => setCreatorRates({ ...creatorRates, [creator.id]: parseInt(e.target.value) || 0 })}
+                          data-testid={`input-rate-${creator.id}`}
+                        />
+                        <Button 
+                          onClick={() => handleUpdateRate(creator.id, creator.name)}
+                          data-testid={`button-update-rate-${creator.id}`}
+                        >
+                          Update
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Percent className="w-5 h-5 text-primary" />
+                    Agency Commission Rates
+                  </CardTitle>
+                  <CardDescription>Manage commission for approved agencies</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {approvedAgents.map((agent) => (
+                    <div key={agent.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                      <div>
+                        <p className="font-medium">{agent.name}</p>
+                        <p className="text-sm text-muted-foreground">{agent.mobile}</p>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-sm text-muted-foreground">Current Commission</p>
+                          <p className="text-lg font-bold">{localStorage.getItem(`agency_commission_${agent.id}`) || agent.currentCommission}%</p>
+                        </div>
+                        <Input
+                          type="number"
+                          placeholder="New %"
+                          className="w-32"
+                          value={agencyCommissions[agent.id] || ""}
+                          onChange={(e) => setAgencyCommissions({ ...agencyCommissions, [agent.id]: parseInt(e.target.value) || 0 })}
+                          data-testid={`input-commission-${agent.id}`}
+                        />
+                        <Button 
+                          onClick={() => handleUpdateCommission(agent.id, agent.name)}
+                          data-testid={`button-update-commission-${agent.id}`}
+                        >
+                          Update
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Admin Management Tab (Super User only) */}
+          {canSeeAdmins && (
+            <TabsContent value="admins" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <CardTitle className="flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-primary" />
+                        Admin Users
+                      </CardTitle>
+                      <CardDescription>Manage admin access and roles</CardDescription>
+                    </div>
+                    <Button onClick={() => setShowAddAdminDialog(true)} data-testid="button-add-admin">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Add Admin
+                    </Button>
                   </div>
-                  <div className="flex justify-between p-4 bg-secondary rounded-lg">
-                    <span className="text-muted-foreground">Total Expenses</span>
-                    <span className="font-semibold">₹45,230</span>
-                  </div>
-                  <div className="flex justify-between p-4 bg-primary/10 rounded-lg">
-                    <span className="font-semibold">Net Profit</span>
-                    <span className="font-bold text-primary">₹78,220</span>
-                  </div>
-                </div>
-              </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {admins.map((admin) => (
+                    <div key={admin.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3">
+                          <p className="font-medium">{admin.name}</p>
+                          <Badge variant={admin.role === "super_user" ? "default" : "secondary"}>
+                            {admin.role.replace("_", " ")}
+                          </Badge>
+                          {admin.isActive ? (
+                            <Badge className="bg-green-500">Active</Badge>
+                          ) : (
+                            <Badge variant="destructive">Inactive</Badge>
+                          )}
+                        </div>
+                        <p className="text-sm text-muted-foreground mt-1">{admin.mobile} • {admin.email}</p>
+                        <p className="text-xs text-muted-foreground mt-1">Created: {admin.createdAt}</p>
+                      </div>
+                      {admin.role !== "super_user" && (
+                        <div className="flex gap-2">
+                          <Button variant="outline" size="sm" data-testid={`button-edit-admin-${admin.id}`}>
+                            Edit
+                          </Button>
+                          <Button 
+                            variant="destructive" 
+                            size="sm"
+                            data-testid={`button-deactivate-admin-${admin.id}`}
+                          >
+                            Deactivate
+                          </Button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="p-6 hover-elevate cursor-pointer" onClick={() => console.log("Expenses")} data-testid="card-expenses">
-                  <FileText className="w-8 h-8 mb-3 text-primary" />
-                  <h3 className="font-semibold mb-1">Expenses</h3>
-                  <p className="text-sm text-muted-foreground">Track and manage expenses</p>
-                </Card>
-
-                <Card className="p-6 hover-elevate cursor-pointer" onClick={() => console.log("Withdrawals")} data-testid="card-withdrawals">
-                  <Wallet className="w-8 h-8 mb-3 text-primary" />
-                  <h3 className="font-semibold mb-1">Withdrawals</h3>
-                  <p className="text-sm text-muted-foreground">Manage creator payouts</p>
-                </Card>
-
-                <Card className="p-6 hover-elevate cursor-pointer" onClick={() => console.log("Payment Reconciliation")} data-testid="card-reconciliation">
-                  <Download className="w-8 h-8 mb-3 text-primary" />
-                  <h3 className="font-semibold mb-1">Reconciliation</h3>
-                  <p className="text-sm text-muted-foreground">Payment gateway sync</p>
-                </Card>
-              </div>
-
-              <Button 
-                className="w-full" 
-                onClick={() => setLocation("/admin/broadcast")}
-                data-testid="button-broadcast"
-              >
-                <Send className="w-4 h-4 mr-2" />
-                Broadcast Message
-              </Button>
-            </div>
-          </TabsContent>
+          {/* Support Tab (All roles) */}
+          {canSeeSupport && (
+            <TabsContent value="support" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <MessageSquare className="w-5 h-5 text-primary" />
+                    Support Tickets
+                  </CardTitle>
+                  <CardDescription>Manage user support requests</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  {supportTickets.map((ticket) => (
+                    <Card key={ticket.id}>
+                      <CardContent className="pt-6">
+                        <div className="space-y-3">
+                          <div className="flex items-start justify-between">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-2">
+                                <h3 className="font-semibold">{ticket.subject}</h3>
+                                <Badge variant={ticket.status === "open" ? "default" : ticket.status === "in_progress" ? "secondary" : "outline"}>
+                                  {ticket.status.replace("_", " ")}
+                                </Badge>
+                                <Badge variant={ticket.priority === "high" ? "destructive" : "secondary"}>
+                                  {ticket.priority}
+                                </Badge>
+                              </div>
+                              <p className="text-sm text-muted-foreground mb-2">
+                                From: {ticket.userName} ({ticket.userMobile})
+                              </p>
+                              <p className="text-sm">{ticket.message}</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between">
+                            <p className="text-xs text-muted-foreground">{ticket.createdAt}</p>
+                            <div className="flex gap-2">
+                              <Button size="sm" variant="outline" data-testid={`button-reply-${ticket.id}`}>
+                                Reply
+                              </Button>
+                              <Button size="sm" data-testid={`button-resolve-${ticket.id}`}>
+                                Resolve
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
         </Tabs>
       </main>
+
+      {/* Rejection Dialog */}
+      <Dialog open={showRejectDialog} onOpenChange={setShowRejectDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Reject Application</DialogTitle>
+            <DialogDescription>
+              Please provide a reason for rejecting {selectedProfile?.name}'s application. This will be visible to the applicant.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <Textarea
+              placeholder="Enter rejection reason..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              rows={4}
+              data-testid="textarea-rejection-reason"
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowRejectDialog(false);
+              setRejectionReason("");
+              setSelectedProfile(null);
+            }}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleReject} data-testid="button-confirm-reject">
+              Reject Application
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Admin Dialog */}
+      <Dialog open={showAddAdminDialog} onOpenChange={setShowAddAdminDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add New Admin</DialogTitle>
+            <DialogDescription>
+              Create a new admin user with specific role and permissions
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="admin-name">Full Name</Label>
+              <Input id="admin-name" placeholder="Enter admin name" data-testid="input-admin-name" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-mobile">Mobile Number</Label>
+              <Input id="admin-mobile" placeholder="+91 XXXXXXXXXX" data-testid="input-new-admin-mobile" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-email">Email</Label>
+              <Input id="admin-email" type="email" placeholder="admin@talkin.com" data-testid="input-admin-email" />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="admin-role">Role</Label>
+              <Select>
+                <SelectTrigger data-testid="select-admin-role">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="admin">Admin</SelectItem>
+                  <SelectItem value="support">Support User</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddAdminDialog(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={() => {
+                toast({
+                  title: "Admin Added",
+                  description: "New admin user has been created successfully.",
+                });
+                setShowAddAdminDialog(false);
+              }} 
+              data-testid="button-create-admin"
+            >
+              Create Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

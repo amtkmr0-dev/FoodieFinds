@@ -16,6 +16,7 @@ import CreatorLogin from "@/pages/CreatorLogin";
 import AgentLogin from "@/pages/AgentLogin";
 import CreatorOnboarding from "@/pages/CreatorOnboarding";
 import PendingApproval from "@/pages/PendingApproval";
+import AdminLogin from "@/pages/AdminLogin";
 import RechargePage from "@/pages/RechargePage";
 import SupportChatPage from "@/pages/SupportChatPage";
 import AdminBroadcast from "@/pages/AdminBroadcast";
@@ -68,6 +69,8 @@ function Router() {
       
       {/* Creator & Admin Routes */}
       <Route path="/creator" component={CreatorApp} />
+      <Route path="/admin/login" component={AdminLogin} />
+      <Route path="/admin/dashboard" component={AdminDashboard} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/broadcast" component={AdminBroadcast} />
       <Route component={NotFound} />
