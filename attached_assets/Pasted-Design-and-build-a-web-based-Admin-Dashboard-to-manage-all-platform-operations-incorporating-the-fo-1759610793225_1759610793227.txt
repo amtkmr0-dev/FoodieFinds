@@ -1,0 +1,190 @@
+Design and build a web-based Admin Dashboard to manage all platform operations, incorporating the following modules and UX guidelines:
+
+1. Homepage Dashboard (Stats Overview)
+Summary Panel
+
+Show key metrics with quick filter options (Today, Yesterday, Weekly):
+
+Total Signups
+
+Total Recharges (Number & Amount)
+
+Install Sources (Google Play, Direct APK, etc.)
+
+Net Calculations (Revenue minus Deductions/Expenses)
+
+Filters and dashboard graphs/charts update instantly
+
+2. User Management
+Users Table
+
+List all users with:
+
+Profile details (ID, name, mobile, registration source, status)
+
+Support chat button for each user
+
+Block user option with mandatory reason/comment input (recorded in user history)
+
+Search & Filter
+
+Search users by name, ID, mobile, install source
+
+Filter by active/blocked status
+
+3. Creator Management
+Creators Table
+
+List all creators with:
+
+Profile details (name, mobile, KYC status, call price/min, status)
+
+Support chat button for each creator
+
+Approve/Reject profile changes (picture/account details, action logs)
+
+Admin can set call pricing (editable field, disabled for creators)
+
+Search & Filter
+
+Quick search/filter by name, status, call price, approval status
+
+4. Agency Management
+Agencies Table
+
+List all agencies with:
+
+Agency profile (name, contact, referral code)
+
+KYC status—approve or reject with comments
+
+Referral management view (referral is read-only, uneditable after signup)
+
+Search & Filter
+
+Find agencies by name, referral code, KYC status
+
+5. Finance Module
+Payments Panel
+
+View and reconcile payments from integrated gateways (PayU, Cashfree, Razorpay)
+
+List and track all expenses (input/add expense, view history with categories)
+
+Withdrawals–review, approve, or reject payouts to creators, with record/log of actions
+
+6. Communication Panel
+Broadcast Messages
+
+Compose and send announcements/messages to selected recipients:
+
+Users
+
+Creators
+
+Agencies
+
+Message history—see all past messages sent
+
+Additional UX/Design Guidelines
+Navigation:
+
+Fixed left-side menu for all major sections: Dashboard, Users, Creators, Agencies, Finance, Communication
+
+Clean table layouts with search, sorting, and filter options
+
+Instant, modal or drawer-based actions (block, approve, set price, broadcast)
+
+Responsive Design:
+
+Works on desktop, tablet, and mobile
+
+Audit Logs:
+
+All admin actions (block, approve, set price) logged securely for tracking
+
+Overall:
+The website dashboard should be minimal, uncluttered, and highly intuitive, allowing platform managers to track all key stats, manage profiles and payouts, and communicate efficiently—all in one place.Prompt for Building a Simple, User-Friendly Admin Dashboard Website:
+
+Create a web-based admin dashboard to manage the entire platform, enabling clear tracking and streamlined control. The dashboard should be intuitive, minimal, and accessible across devices.
+
+Modules to Include:
+
+Homepage Dashboard
+
+Display key stats with filters (Today, Yesterday, Weekly):
+
+Total Signups
+
+Total Recharges (Number & Amount)
+
+Install Sources (Google Play, Direct APK, etc.)
+
+Net Calculations (Revenue – Deductions/Expenses)
+
+Visual charts/graphs update with filters.
+
+User Management
+
+Table/list of all registered users.
+
+Support chat button for each user.
+
+Button to block user (mandatory reason/comment field, store log).
+
+Creator Management
+
+Table/list of all creators.
+
+Support chat button for each creator.
+
+Pending profile changes shown for admin approval/rejection.
+
+Editable call price field (admin-only).
+
+Agency Management
+
+Table/list of all agencies.
+
+KYC review and approval buttons with comment logging.
+
+Show referral codes (read-only, uneditable post-signup).
+
+Finance
+
+Integrate payment reconciliation for gateways (PayU, Cashfree, Razorpay).
+
+Form/view for adding & tracking expenses.
+
+List & process withdrawals and payouts for creators.
+
+Communication
+
+Broadcast message composer.
+
+Select recipients: Users, Creators, or Agencies.
+
+Message history panel.
+
+Design Guidelines:
+
+Fixed sidebar for module navigation.
+
+Responsive cards, tables, and modals.
+
+Quick search/filter on all data tables.
+
+Persistent audit logs for every admin action.
+
+Use clear icons, color codes, and labels for action items.
+
+Ensure all sensitive actions have confirmations and logging.
+
+Outcome:
+A single dashboard website enabling real-time tracking, streamlined management, and secure operations across users, creators, agencies, finance, and communications. All management operations should be just a click or search away, with full transparency and accountability per the platform’s requirements.
+
+
+
+
+
+

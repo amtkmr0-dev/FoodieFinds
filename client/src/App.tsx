@@ -12,6 +12,10 @@ import CreatorApp from "@/pages/CreatorApp";
 import AdminDashboard from "@/pages/AdminDashboard";
 import SignupLogin from "@/pages/SignupLogin";
 import CreatorSignup from "@/pages/CreatorSignup";
+import CreatorLogin from "@/pages/CreatorLogin";
+import AgentLogin from "@/pages/AgentLogin";
+import CreatorOnboarding from "@/pages/CreatorOnboarding";
+import PendingApproval from "@/pages/PendingApproval";
 import RechargePage from "@/pages/RechargePage";
 import SupportChatPage from "@/pages/SupportChatPage";
 import AdminBroadcast from "@/pages/AdminBroadcast";
@@ -36,6 +40,16 @@ function Router() {
       }} />
       <Route path="/signup" component={SignupLogin} />
       <Route path="/creator-signup" component={CreatorSignup} />
+      
+      {/* Creator & Agent Auth Routes */}
+      <Route path="/creator/login" component={CreatorLogin} />
+      <Route path="/agent/login" component={AgentLogin} />
+      <Route path="/creator/onboarding" component={CreatorOnboarding} />
+      <Route path="/agent/onboarding" component={CreatorOnboarding} />
+      <Route path="/creator/pending-approval" component={PendingApproval} />
+      <Route path="/agent/pending-approval" component={PendingApproval} />
+      
+      {/* User Routes */}
       <Route path="/user" component={UserApp} />
       <Route path="/user/account" component={AccountPage} />
       <Route path="/user/creator/:id" component={CreatorProfile} />
@@ -51,6 +65,8 @@ function Router() {
           onRecharge={() => window.location.href = "/user/recharge"}
         />
       )} />
+      
+      {/* Creator & Admin Routes */}
       <Route path="/creator" component={CreatorApp} />
       <Route path="/admin" component={AdminDashboard} />
       <Route path="/admin/broadcast" component={AdminBroadcast} />

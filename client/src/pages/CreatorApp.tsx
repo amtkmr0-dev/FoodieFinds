@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -42,6 +44,13 @@ import {
   Mic,
   Award,
   TrendingDown,
+  User,
+  Globe,
+  Copy,
+  Share,
+  Shield,
+  CreditCard,
+  FileText,
 } from "lucide-react";
 
 export default function CreatorApp() {
@@ -168,7 +177,7 @@ export default function CreatorApp() {
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-6">
+          <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard" data-testid="tab-dashboard">
               <BarChart3 className="w-4 h-4 mr-2" />
               Dashboard
@@ -192,6 +201,10 @@ export default function CreatorApp() {
             <TabsTrigger value="earnings" data-testid="tab-earnings">
               <Wallet className="w-4 h-4 mr-2" />
               Earnings
+            </TabsTrigger>
+            <TabsTrigger value="settings" data-testid="tab-settings">
+              <Settings className="w-4 h-4 mr-2" />
+              Settings
             </TabsTrigger>
           </TabsList>
 
@@ -881,6 +894,262 @@ export default function CreatorApp() {
                     </div>
                   </div>
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Settings Tab */}
+          <TabsContent value="settings" className="space-y-6 mt-6">
+            {/* Profile Management */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="w-5 h-5 text-primary" />
+                  Profile Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-name">Full Name</Label>
+                    <Input id="profile-name" defaultValue="Sarah Johnson" data-testid="input-profile-name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-email">Email</Label>
+                    <Input id="profile-email" type="email" defaultValue="sarah@example.com" data-testid="input-profile-email" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="profile-mobile">Mobile Number</Label>
+                    <Input id="profile-mobile" defaultValue="+91 9876543210" disabled />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Approval Status</Label>
+                    <Badge className="bg-green-500">Approved</Badge>
+                  </div>
+                </div>
+                <Button data-testid="button-update-profile">Update Profile</Button>
+              </CardContent>
+            </Card>
+
+            {/* Bank Details */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-primary" />
+                  Bank Account Details
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-account-name">Account Holder Name</Label>
+                    <Input id="bank-account-name" defaultValue="Sarah Johnson" data-testid="input-bank-name" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-account-number">Account Number</Label>
+                    <Input id="bank-account-number" defaultValue="1234567890" data-testid="input-bank-number" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="bank-ifsc">IFSC Code</Label>
+                    <Input id="bank-ifsc" defaultValue="SBIN0001234" data-testid="input-bank-ifsc" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Verification Status</Label>
+                    <Badge className="bg-green-500">Verified</Badge>
+                  </div>
+                </div>
+                <Button data-testid="button-update-bank">Update Bank Details</Button>
+              </CardContent>
+            </Card>
+
+            {/* KYC Documents */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  KYC Documents
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="aadhar">Aadhar Number</Label>
+                    <Input id="aadhar" defaultValue="XXXX XXXX 1234" disabled data-testid="input-aadhar-display" />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="pan">PAN Number</Label>
+                    <Input id="pan" defaultValue="ABCDE1234F" disabled data-testid="input-pan-display" />
+                  </div>
+                </div>
+                <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                  <p className="text-sm">
+                    <strong>Note:</strong> KYC documents are verified and cannot be edited. 
+                    Contact support if you need to update these details.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Withdrawal Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Wallet className="w-5 h-5 text-primary" />
+                  Withdrawal
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-secondary rounded-lg p-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-muted-foreground">Available Balance</span>
+                    <span className="text-2xl font-bold">₹{creatorStats.earningsToday.toLocaleString()}</span>
+                  </div>
+                  <Separator className="my-4" />
+                  <div className="space-y-2 text-sm">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Minimum Withdrawal</span>
+                      <span>₹500</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Processing Time</span>
+                      <span>Instant</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Bank Account</span>
+                      <span>XXXX1234 (Verified)</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Input placeholder="Enter amount (min ₹500)" type="number" data-testid="input-withdrawal-amount" />
+                  <Button onClick={handleWithdraw} data-testid="button-withdraw">
+                    <Download className="w-4 h-4 mr-2" />
+                    Withdraw
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Language Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Globe className="w-5 h-5 text-primary" />
+                  Language Preference
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="language">Select Language</Label>
+                    <select
+                      id="language"
+                      className="w-full p-2 border rounded-md bg-background"
+                      defaultValue="en"
+                      data-testid="select-language"
+                    >
+                      <option value="en">English</option>
+                      <option value="hi">हिंदी (Hindi)</option>
+                      <option value="ta">தமிழ் (Tamil)</option>
+                      <option value="te">తెలుగు (Telugu)</option>
+                      <option value="bn">বাংলা (Bengali)</option>
+                      <option value="mr">मराठी (Marathi)</option>
+                    </select>
+                  </div>
+                  <Button data-testid="button-save-language">Save Language</Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Referral Program */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Gift className="w-5 h-5 text-primary" />
+                  Referral Program
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20 rounded-lg p-4">
+                  <h3 className="font-semibold mb-2">Earn by Referring!</h3>
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Share your referral code and earn ₹500 for each creator who joins and completes 10 calls
+                  </p>
+                  <div className="space-y-3">
+                    <div>
+                      <Label>Your Referral Code</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input value="SARAH2024" readOnly className="font-mono font-bold" data-testid="input-referral-code" />
+                        <Button variant="outline" size="icon" data-testid="button-copy-referral">
+                          <Copy className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <div>
+                      <Label>Referral Link</Label>
+                      <div className="flex gap-2 mt-2">
+                        <Input 
+                          value="https://talkin.app/creator/login?ref=SARAH2024" 
+                          readOnly 
+                          className="text-sm" 
+                          data-testid="input-referral-link" 
+                        />
+                        <Button variant="outline" size="icon" data-testid="button-share-referral">
+                          <Share className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="bg-secondary rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold">12</p>
+                    <p className="text-sm text-muted-foreground">Total Referrals</p>
+                  </div>
+                  <div className="bg-secondary rounded-lg p-4 text-center">
+                    <p className="text-2xl font-bold">₹6,000</p>
+                    <p className="text-sm text-muted-foreground">Earned from Referrals</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Policies & Legal */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <FileText className="w-5 h-5 text-primary" />
+                  Legal & Policies
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2">
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-terms-of-use">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Terms of Use
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-privacy-policy">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Privacy Policy
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-creator-agreement">
+                    <FileText className="w-4 h-4 mr-2" />
+                    Creator Agreement
+                  </Button>
+                  <Button variant="outline" className="w-full justify-start" data-testid="link-community-guidelines">
+                    <Users className="w-4 h-4 mr-2" />
+                    Community Guidelines
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Logout */}
+            <Card>
+              <CardContent className="pt-6">
+                <Button variant="destructive" className="w-full" data-testid="button-logout">
+                  Logout
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
