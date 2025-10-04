@@ -1,123 +1,690 @@
 import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Wallet, Users, Gift, MessageSquare, Settings, TrendingUp } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Progress } from "@/components/ui/progress";
+import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
+import {
+  Wallet,
+  Users,
+  Gift,
+  MessageSquare,
+  Settings,
+  TrendingUp,
+  Video,
+  Phone,
+  Sparkles,
+  Trophy,
+  Target,
+  DollarSign,
+  BarChart3,
+  Clock,
+  Star,
+  Zap,
+  Crown,
+  Heart,
+  Send,
+  Download,
+  UserPlus,
+  Radio,
+  Camera,
+  Mic,
+  Award,
+  TrendingDown,
+} from "lucide-react";
 
 export default function CreatorApp() {
-  const [role] = useState<"creator" | "agency">("creator");
+  const [role, setRole] = useState<"creator" | "agency">("creator");
+  const [isLive, setIsLive] = useState(false);
+  const [selectedTab, setSelectedTab] = useState("dashboard");
 
-  const stats = {
-    creator: [
-      { label: "Earnings Today", value: "₹2,340", icon: Wallet },
-      { label: "Total Calls", value: "45", icon: Users },
-      { label: "Gifts Received", value: "12", icon: Gift },
-    ],
-    agency: [
-      { label: "Commission", value: "₹12,450", icon: Wallet },
-      { label: "Creators", value: "23", icon: Users },
-      { label: "Growth", value: "+15%", icon: TrendingUp },
-    ],
+  // Mock data
+  const creatorStats = {
+    earningsToday: 2340,
+    earningsThisWeek: 15670,
+    earningsThisMonth: 54320,
+    totalCalls: 45,
+    callsToday: 12,
+    giftsReceived: 127,
+    giftsValue: 8900,
+    followers: 1250,
+    liveViewers: 0,
+    pkWins: 23,
+    pkLosses: 15,
+    rank: 47,
+  };
+
+  const agencyStats = {
+    commission: 12450,
+    commissionToday: 1890,
+    creators: 23,
+    activeCreators: 18,
+    growth: 15,
+    totalEarnings: 89560,
+  };
+
+  const gifts = [
+    { id: 1, name: "Rose", price: 10, icon: Heart, points: 1, color: "text-pink-500" },
+    { id: 2, name: "Heart", price: 50, icon: Heart, points: 5, color: "text-red-500" },
+    { id: 3, name: "Diamond", price: 200, icon: Sparkles, points: 20, color: "text-blue-500" },
+    { id: 4, name: "Crown", price: 500, icon: Crown, points: 50, color: "text-yellow-500" },
+    { id: 5, name: "Rocket", price: 1000, icon: Zap, points: 100, color: "text-purple-500" },
+    { id: 6, name: "Universe", price: 5000, icon: Star, points: 500, color: "text-indigo-500" },
+  ];
+
+  const recentCalls = [
+    { id: 1, user: "Rahul M.", duration: "12 min", earnings: 540, type: "video", status: "completed" },
+    { id: 2, user: "Priya S.", duration: "8 min", earnings: 360, type: "voice", status: "completed" },
+    { id: 3, user: "Amit K.", duration: "15 min", earnings: 675, type: "video", status: "completed" },
+  ];
+
+  const pkBattleHistory = [
+    { id: 1, opponent: "Creator_789", result: "win", points: 1250, gifts: 25, duration: "5 min" },
+    { id: 2, opponent: "Star_Host", result: "loss", points: 890, gifts: 18, duration: "5 min" },
+    { id: 3, opponent: "TopCreator", result: "win", points: 1580, gifts: 32, duration: "5 min" },
+  ];
+
+  const myCreators = [
+    { id: 1, name: "Sarah Johnson", earnings: 3240, calls: 28, status: "online", commission: 648 },
+    { id: 2, name: "Amit Patel", earnings: 2890, calls: 24, status: "online", commission: 578 },
+    { id: 3, name: "Priya Singh", earnings: 4120, calls: 35, status: "offline", commission: 824 },
+  ];
+
+  const handleGoLive = () => {
+    setIsLive(!isLive);
+  };
+
+  const handleWithdraw = () => {
+    console.log("Withdraw funds");
   };
 
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Header */}
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div>
-            <h1 className="text-xl font-bold">Talkin {role === "creator" ? "Creator" : "Agency"}</h1>
-            <Badge variant="secondary" className="mt-1">
-              {role === "creator" ? "Creator Mode" : "Agency Mode"}
+          <div className="flex items-center gap-3">
+            <h1 className="text-xl font-bold">
+              Talkin {role === "creator" ? "Creator" : "Agency"}
+            </h1>
+            <Badge variant={isLive ? "default" : "secondary"} className={isLive ? "bg-red-500 animate-pulse" : ""}>
+              {isLive ? "🔴 LIVE" : role === "creator" ? "Creator" : "Agency"}
             </Badge>
           </div>
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRole(role === "creator" ? "agency" : "creator")}
+              data-testid="button-switch-role"
+            >
+              Switch to {role === "creator" ? "Agency" : "Creator"}
+            </Button>
+            <ThemeToggle />
+          </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 py-6 space-y-6">
-        <Card className="p-6">
-          <div className="flex items-center gap-4 mb-6">
-            <Avatar className="w-20 h-20">
-              <AvatarImage src="" alt="Profile" />
-              <AvatarFallback className="text-2xl">SJ</AvatarFallback>
-            </Avatar>
-            <div className="flex-1">
-              <h2 className="text-2xl font-bold mb-1">Sarah Johnson</h2>
-              <p className="text-muted-foreground">₹45/min • 1,250 followers</p>
-              <Badge className="mt-2 bg-success">Approved</Badge>
-            </div>
-          </div>
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
+          <TabsList className="grid w-full grid-cols-5">
+            <TabsTrigger value="dashboard" data-testid="tab-dashboard">
+              <BarChart3 className="w-4 h-4 mr-2" />
+              Dashboard
+            </TabsTrigger>
+            <TabsTrigger value="live" data-testid="tab-live">
+              <Radio className="w-4 h-4 mr-2" />
+              Go Live
+            </TabsTrigger>
+            <TabsTrigger value="pk-battles" data-testid="tab-pk-battles">
+              <Trophy className="w-4 h-4 mr-2" />
+              PK Battles
+            </TabsTrigger>
+            <TabsTrigger value="gifts" data-testid="tab-gifts">
+              <Gift className="w-4 h-4 mr-2" />
+              Gifts
+            </TabsTrigger>
+            <TabsTrigger value="earnings" data-testid="tab-earnings">
+              <Wallet className="w-4 h-4 mr-2" />
+              Earnings
+            </TabsTrigger>
+          </TabsList>
 
-          <div className="grid grid-cols-3 gap-4">
-            {stats[role].map((stat) => (
-              <div key={stat.label} className="text-center p-4 rounded-lg bg-secondary">
-                <stat.icon className="w-5 h-5 mx-auto mb-2 text-primary" />
-                <p className="text-2xl font-bold mb-1">{stat.value}</p>
-                <p className="text-xs text-muted-foreground">{stat.label}</p>
-              </div>
-            ))}
-          </div>
-        </Card>
-
-        {role === "agency" && (
-          <Card className="p-6">
-            <h3 className="font-semibold mb-4">Referral Link</h3>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value="https://talkin.app/ref/SARAH123"
-                readOnly
-                className="flex-1 px-4 py-2 bg-secondary rounded-lg text-sm"
-                data-testid="input-referral-link"
-              />
-              <Button onClick={() => console.log("Copied!")} data-testid="button-copy-link">
-                Copy
-              </Button>
-            </div>
-          </Card>
-        )}
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="p-6 hover-elevate cursor-pointer" data-testid="card-earnings">
-            <Wallet className="w-8 h-8 mb-3 text-primary" />
-            <h3 className="font-semibold mb-1">Earnings</h3>
-            <p className="text-sm text-muted-foreground">
-              View your detailed earnings and withdraw funds
-            </p>
-          </Card>
-
-          <Card className="p-6 hover-elevate cursor-pointer" data-testid="card-profile">
-            <Settings className="w-8 h-8 mb-3 text-primary" />
-            <h3 className="font-semibold mb-1">Profile Settings</h3>
-            <p className="text-sm text-muted-foreground">
-              Update your profile (requires admin approval)
-            </p>
-          </Card>
-        </div>
-
-        <Card className="p-6">
-          <h3 className="font-semibold mb-4">Recent Activity</h3>
-          <div className="space-y-3">
-            {[1, 2, 3].map((i) => (
-              <div key={i} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
-                <div className="flex items-center gap-3">
-                  <Avatar className="w-10 h-10">
-                    <AvatarFallback>U{i}</AvatarFallback>
+          {/* Dashboard Tab */}
+          <TabsContent value="dashboard" className="space-y-6 mt-6">
+            {/* Profile Card */}
+            <Card>
+              <CardContent className="pt-6">
+                <div className="flex items-center gap-4 mb-6">
+                  <Avatar className="w-20 h-20">
+                    <AvatarImage src="" alt="Profile" />
+                    <AvatarFallback className="text-2xl">SJ</AvatarFallback>
                   </Avatar>
-                  <div>
-                    <p className="font-medium">Call with User {i}</p>
-                    <p className="text-xs text-muted-foreground">5 mins • ₹{i * 45}</p>
+                  <div className="flex-1">
+                    <h2 className="text-2xl font-bold mb-1">Sarah Johnson</h2>
+                    <p className="text-muted-foreground">₹45/min • {creatorStats.followers.toLocaleString()} followers</p>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge className="bg-success">Approved</Badge>
+                      <Badge variant="outline" className="flex items-center gap-1">
+                        <Trophy className="w-3 h-3" />
+                        Rank #{creatorStats.rank}
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Button
+                      size="lg"
+                      className={isLive ? "bg-red-500 hover:bg-red-600" : ""}
+                      onClick={handleGoLive}
+                      data-testid="button-go-live"
+                    >
+                      {isLive ? (
+                        <>
+                          <Video className="w-4 h-4 mr-2" />
+                          End Stream
+                        </>
+                      ) : (
+                        <>
+                          <Radio className="w-4 h-4 mr-2" />
+                          Go Live
+                        </>
+                      )}
+                    </Button>
                   </div>
                 </div>
-                <Badge variant="secondary">Completed</Badge>
-              </div>
-            ))}
-          </div>
-        </Card>
+
+                {/* Stats Grid */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <div className="text-center p-4 rounded-lg bg-secondary">
+                    <Wallet className="w-5 h-5 mx-auto mb-2 text-primary" />
+                    <p className="text-2xl font-bold mb-1">₹{creatorStats.earningsToday.toLocaleString()}</p>
+                    <p className="text-xs text-muted-foreground">Today's Earnings</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-secondary">
+                    <Phone className="w-5 h-5 mx-auto mb-2 text-primary" />
+                    <p className="text-2xl font-bold mb-1">{creatorStats.callsToday}</p>
+                    <p className="text-xs text-muted-foreground">Calls Today</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-secondary">
+                    <Gift className="w-5 h-5 mx-auto mb-2 text-primary" />
+                    <p className="text-2xl font-bold mb-1">{creatorStats.giftsReceived}</p>
+                    <p className="text-xs text-muted-foreground">Gifts Received</p>
+                  </div>
+                  <div className="text-center p-4 rounded-lg bg-secondary">
+                    <Trophy className="w-5 h-5 mx-auto mb-2 text-primary" />
+                    <p className="text-2xl font-bold mb-1">{creatorStats.pkWins}-{creatorStats.pkLosses}</p>
+                    <p className="text-xs text-muted-foreground">PK Record</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Quick Actions */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              <Card className="hover-elevate cursor-pointer" data-testid="card-video-call">
+                <CardContent className="pt-6 text-center">
+                  <Video className="w-8 h-8 mx-auto mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Video Call</h3>
+                  <p className="text-sm text-muted-foreground">Start earning</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="hover-elevate cursor-pointer" data-testid="card-voice-call">
+                <CardContent className="pt-6 text-center">
+                  <Mic className="w-8 h-8 mx-auto mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Voice Call</h3>
+                  <p className="text-sm text-muted-foreground">Audio only</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-elevate cursor-pointer" data-testid="card-start-pk">
+                <CardContent className="pt-6 text-center">
+                  <Trophy className="w-8 h-8 mx-auto mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Start PK</h3>
+                  <p className="text-sm text-muted-foreground">Battle now</p>
+                </CardContent>
+              </Card>
+
+              <Card className="hover-elevate cursor-pointer" data-testid="card-beauty-filters">
+                <CardContent className="pt-6 text-center">
+                  <Sparkles className="w-8 h-8 mx-auto mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Beauty Filters</h3>
+                  <p className="text-sm text-muted-foreground">Apply effects</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Recent Activity */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span>Recent Calls</span>
+                  <Badge variant="secondary">{recentCalls.length} today</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {recentCalls.map((call) => (
+                  <div key={call.id} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="w-10 h-10">
+                        <AvatarFallback>{call.user.slice(0, 2)}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <p className="font-medium">{call.user}</p>
+                        <p className="text-xs text-muted-foreground flex items-center gap-2">
+                          {call.type === "video" ? <Video className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
+                          {call.duration} • ₹{call.earnings}
+                        </p>
+                      </div>
+                    </div>
+                    <Badge className="bg-success">Completed</Badge>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Go Live Tab */}
+          <TabsContent value="live" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Radio className="w-5 h-5 text-primary" />
+                  Live Streaming Controls
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {!isLive ? (
+                  <div className="text-center py-8">
+                    <Radio className="w-16 h-16 mx-auto mb-4 text-muted-foreground" />
+                    <h3 className="text-lg font-semibold mb-2">Start Your Live Stream</h3>
+                    <p className="text-muted-foreground mb-6">Connect with your audience in real-time</p>
+                    <Button size="lg" onClick={handleGoLive} data-testid="button-start-stream">
+                      <Video className="w-4 h-4 mr-2" />
+                      Go Live Now
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div className="bg-red-500/10 border border-red-500 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                          <span className="font-semibold text-red-500">LIVE NOW</span>
+                        </div>
+                        <Badge variant="secondary">{creatorStats.liveViewers} viewers</Badge>
+                      </div>
+                      
+                      <div className="grid grid-cols-3 gap-4 mb-4">
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">0</p>
+                          <p className="text-xs text-muted-foreground">Viewers</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">₹0</p>
+                          <p className="text-xs text-muted-foreground">Gifts Received</p>
+                        </div>
+                        <div className="text-center">
+                          <p className="text-2xl font-bold">0:00</p>
+                          <p className="text-xs text-muted-foreground">Duration</p>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button variant="outline" size="sm" className="flex-1" data-testid="button-toggle-camera">
+                          <Camera className="w-4 h-4 mr-2" />
+                          Camera
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1" data-testid="button-toggle-mic">
+                          <Mic className="w-4 h-4 mr-2" />
+                          Microphone
+                        </Button>
+                        <Button variant="outline" size="sm" className="flex-1" data-testid="button-filters">
+                          <Sparkles className="w-4 h-4 mr-2" />
+                          Filters
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Button
+                      variant="destructive"
+                      size="lg"
+                      className="w-full"
+                      onClick={handleGoLive}
+                      data-testid="button-end-stream"
+                    >
+                      End Live Stream
+                    </Button>
+                  </div>
+                )}
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-4">Stream Settings</h4>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Beauty Filter</p>
+                        <p className="text-sm text-muted-foreground">Auto-enhance appearance</p>
+                      </div>
+                      <Switch data-testid="switch-beauty-filter" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Allow Gifts</p>
+                        <p className="text-sm text-muted-foreground">Receive virtual gifts</p>
+                      </div>
+                      <Switch defaultChecked data-testid="switch-allow-gifts" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-medium">Enable Chat</p>
+                        <p className="text-sm text-muted-foreground">Allow viewer messages</p>
+                      </div>
+                      <Switch defaultChecked data-testid="switch-enable-chat" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* PK Battles Tab */}
+          <TabsContent value="pk-battles" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Trophy className="w-5 h-5 text-primary" />
+                    PK Battle Arena
+                  </span>
+                  <Badge variant="outline" className="flex items-center gap-1">
+                    <Award className="w-3 h-3" />
+                    {creatorStats.pkWins}W - {creatorStats.pkLosses}L
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold mb-2">What are PK Battles?</h3>
+                  <p className="text-muted-foreground mb-4">
+                    Compete with another creator in a 5-minute live battle. Viewers send gifts to support their favorite creator. Most gifts wins!
+                  </p>
+                  <Button size="lg" className="w-full" data-testid="button-find-pk-opponent">
+                    <Zap className="w-4 h-4 mr-2" />
+                    Find Opponent
+                  </Button>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-4">Battle History</h4>
+                  <div className="space-y-3">
+                    {pkBattleHistory.map((battle) => (
+                      <div
+                        key={battle.id}
+                        className={`p-4 rounded-lg border ${
+                          battle.result === "win"
+                            ? "bg-green-500/10 border-green-500/20"
+                            : "bg-red-500/10 border-red-500/20"
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex items-center gap-2">
+                            <Badge
+                              variant={battle.result === "win" ? "default" : "secondary"}
+                              className={battle.result === "win" ? "bg-green-500" : "bg-red-500"}
+                            >
+                              {battle.result.toUpperCase()}
+                            </Badge>
+                            <span className="font-medium">vs {battle.opponent}</span>
+                          </div>
+                          <span className="text-sm text-muted-foreground">{battle.duration}</span>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div>
+                            <p className="text-muted-foreground">Points</p>
+                            <p className="font-semibold">{battle.points.toLocaleString()}</p>
+                          </div>
+                          <div>
+                            <p className="text-muted-foreground">Gifts</p>
+                            <p className="font-semibold">{battle.gifts}</p>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Gifts Tab */}
+          <TabsContent value="gifts" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Gift className="w-5 h-5 text-primary" />
+                    Virtual Gifts
+                  </span>
+                  <Badge variant="secondary">₹{creatorStats.giftsValue.toLocaleString()} earned</Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {gifts.map((gift) => (
+                    <Card key={gift.id} className="hover-elevate cursor-pointer" data-testid={`gift-${gift.id}`}>
+                      <CardContent className="pt-6 text-center">
+                        <gift.icon className={`w-12 h-12 mx-auto mb-2 ${gift.color}`} />
+                        <h4 className="font-semibold mb-1">{gift.name}</h4>
+                        <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                          <span>₹{gift.price}</span>
+                          <span>•</span>
+                          <span>{gift.points} pts</span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-4">Gift Conversion Rate</h4>
+                  <div className="bg-secondary rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="text-muted-foreground">Your Share</span>
+                      <span className="text-2xl font-bold">70%</span>
+                    </div>
+                    <Progress value={70} className="mb-2" />
+                    <p className="text-sm text-muted-foreground">
+                      For every ₹100 in gifts, you earn ₹70
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-4">Top Gifters This Week</h4>
+                  <div className="space-y-2">
+                    {[1, 2, 3].map((i) => (
+                      <div key={i} className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center">
+                            {i === 1 && <Crown className="w-4 h-4 text-yellow-500" />}
+                            {i === 2 && <Star className="w-4 h-4 text-gray-400" />}
+                            {i === 3 && <Award className="w-4 h-4 text-orange-400" />}
+                          </div>
+                          <div>
+                            <p className="font-medium">User_{i * 100}</p>
+                            <p className="text-xs text-muted-foreground">{15 - i * 2} gifts sent</p>
+                          </div>
+                        </div>
+                        <Badge variant="outline">₹{(500 - i * 100).toLocaleString()}</Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Earnings Tab */}
+          <TabsContent value="earnings" className="space-y-6 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    <Wallet className="w-5 h-5 text-primary" />
+                    Earnings Overview
+                  </span>
+                  <Button onClick={handleWithdraw} data-testid="button-withdraw">
+                    <Download className="w-4 h-4 mr-2" />
+                    Withdraw
+                  </Button>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <Card className="bg-gradient-to-br from-blue-500/10 to-blue-600/10 border-blue-500/20">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground mb-1">Today</p>
+                      <p className="text-3xl font-bold mb-1">₹{creatorStats.earningsToday.toLocaleString()}</p>
+                      <p className="text-sm text-green-500 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        +12% from yesterday
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/10 border-purple-500/20">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground mb-1">This Week</p>
+                      <p className="text-3xl font-bold mb-1">₹{creatorStats.earningsThisWeek.toLocaleString()}</p>
+                      <p className="text-sm text-green-500 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        +8% from last week
+                      </p>
+                    </CardContent>
+                  </Card>
+
+                  <Card className="bg-gradient-to-br from-green-500/10 to-green-600/10 border-green-500/20">
+                    <CardContent className="pt-6">
+                      <p className="text-sm text-muted-foreground mb-1">This Month</p>
+                      <p className="text-3xl font-bold mb-1">₹{creatorStats.earningsThisMonth.toLocaleString()}</p>
+                      <p className="text-sm text-green-500 flex items-center gap-1">
+                        <TrendingUp className="w-3 h-3" />
+                        +15% from last month
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                <div>
+                  <h4 className="font-semibold mb-4">Earnings Breakdown</h4>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Phone className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Video & Voice Calls</p>
+                          <p className="text-sm text-muted-foreground">45 calls today</p>
+                        </div>
+                      </div>
+                      <span className="font-semibold">₹{(creatorStats.earningsToday * 0.6).toFixed(0)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Gift className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Virtual Gifts</p>
+                          <p className="text-sm text-muted-foreground">127 gifts received</p>
+                        </div>
+                      </div>
+                      <span className="font-semibold">₹{(creatorStats.earningsToday * 0.3).toFixed(0)}</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-secondary rounded-lg">
+                      <div className="flex items-center gap-3">
+                        <Radio className="w-5 h-5 text-primary" />
+                        <div>
+                          <p className="font-medium">Live Streaming</p>
+                          <p className="text-sm text-muted-foreground">2 streams today</p>
+                        </div>
+                      </div>
+                      <span className="font-semibold">₹{(creatorStats.earningsToday * 0.1).toFixed(0)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <Separator />
+
+                <div>
+                  <h4 className="font-semibold mb-4">Withdrawal Information</h4>
+                  <div className="bg-secondary rounded-lg p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Available Balance</span>
+                      <span className="text-xl font-bold">₹{creatorStats.earningsToday.toLocaleString()}</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Minimum Withdrawal</span>
+                      <span>₹500</span>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-muted-foreground">Processing Time</span>
+                      <span>Instant</span>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+
+        {/* Agency-specific sections */}
+        {role === "agency" && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <UserPlus className="w-5 h-5 text-primary" />
+                My Creators
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {myCreators.map((creator) => (
+                <div key={creator.id} className="flex items-center justify-between p-4 bg-secondary rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-12 h-12">
+                      <AvatarFallback>{creator.name.slice(0, 2)}</AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-medium">{creator.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {creator.calls} calls • ₹{creator.earnings.toLocaleString()} earned
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <Badge variant={creator.status === "online" ? "default" : "secondary"} className={creator.status === "online" ? "bg-green-500" : ""}>
+                      {creator.status}
+                    </Badge>
+                    <p className="text-sm font-semibold mt-1">
+                      ₹{creator.commission.toLocaleString()} commission
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        )}
       </main>
 
+      {/* Bottom Navigation */}
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t px-4 py-3">
         <div className="flex justify-around max-w-md mx-auto">
           <Button variant="ghost" size="icon" data-testid="button-nav-home">
