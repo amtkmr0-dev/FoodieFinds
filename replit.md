@@ -146,6 +146,13 @@ Preferred communication style: Simple, everyday language.
   - Legal & Policies as expandable accordion section containing all policy links
   - Clean, organized interface following mobile app patterns
 - Back button added to upper left corner for consistent navigation to home screen
+- **Profile Editing System**:
+  - User ID displayed in TK-XXXXXXXX format with copy-to-clipboard functionality
+  - Edit mode allows updating username, name, and email fields
+  - Mobile number is read-only (cannot be edited)
+  - Save button commits changes with "Profile Updated" success toast
+  - Cancel button discards changes and reverts to original values
+  - Copy User ID button shows "User ID Copied" toast confirmation
 
 **Strict PRD Compliance Updates**
 - **Test Creator Profiles**: Created 9 comprehensive test profiles with complete data structure:

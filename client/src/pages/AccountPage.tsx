@@ -296,7 +296,7 @@ export default function AccountPage() {
                   {isEditing ? (
                     <Input
                       value={editForm.name}
-                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, name: e.target.value })}
                       placeholder="Enter name"
                       data-testid="input-name"
                     />
@@ -317,7 +317,7 @@ export default function AccountPage() {
                     <Input
                       type="email"
                       value={editForm.email}
-                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, email: e.target.value })}
                       placeholder="Enter email"
                       data-testid="input-email"
                     />
