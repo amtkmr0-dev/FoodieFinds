@@ -30,12 +30,12 @@ export default function RechargePage() {
     // In real app, redirect to payment gateway
     setTimeout(() => {
       toast({
-        title: "Payment Successful",
+        title: "Payment Successful!",
         description: `₹${selectedAmount} has been added to your wallet.`,
       });
       // Delay redirect to ensure toast is visible
       setTimeout(() => {
-        setLocation("/user");
+        setLocation("/user/account");
       }, 1500);
     }, 1500);
   };

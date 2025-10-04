@@ -145,3 +145,25 @@ Preferred communication style: Simple, everyday language.
   - Language selection and DND toggle as standalone items
   - Legal & Policies as expandable accordion section containing all policy links
   - Clean, organized interface following mobile app patterns
+- Back button added to upper left corner for consistent navigation to home screen
+
+**Strict PRD Compliance Updates**
+- **Test Creator Profiles**: Created 9 comprehensive test profiles with complete data structure:
+  - All profiles include: aboutMe, talksAbout (array), hobbies (array), foodPreferences (array), sportsInterests (array)
+  - Country and followers count properly set for all profiles
+  - Data structure matches production requirements for rich profile displays
+- **About Section Implementation**: Added detailed About section to creator profiles displaying:
+  - About Me paragraph with person icon
+  - Talks About topics as comma-separated list with message icon
+  - Hobbies as comma-separated list with heart icon
+  - Favorite Food items with utensils icon
+  - Sports Interests with trophy icon
+  - Section appears before Photos & Videos with proper data-testid attributes for testing
+- **Payment Gateway Flow (Strict Mode)**: Complete recharge flow redesign per PRD:
+  - Removed all custom amount input fields - only predefined INR packs allowed (₹100, ₹200, ₹500, ₹1000, ₹2000, ₹5000)
+  - Payment gateway modal opens immediately after pack selection with no intermediate pages
+  - Modal displays three gateways: PayU, Cashfree, Razorpay with icons and descriptions
+  - Modal is non-dismissible: prevents outside click and Escape key - user must select gateway or cancel
+  - Toast timing adjusted: "Processing Payment" (1.5s) → "Payment Successful!" (1.5s) → redirect to /user/account
+  - Enforces strict PRD requirement: no custom recharge amounts allowed
+  - Tested and verified: end-to-end payment flow works correctly with proper redirect behavior
