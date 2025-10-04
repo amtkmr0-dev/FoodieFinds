@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import {
   Accordion,
@@ -37,22 +38,39 @@ import {
   AlertCircle,
   BellOff,
   IndianRupee,
+  Copy,
+  Check,
+  Edit,
+  IdCard,
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function AccountPage() {
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [dndEnabled, setDndEnabled] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
+  const [isEditing, setIsEditing] = useState(false);
+  const [copiedUserId, setCopiedUserId] = useState(false);
 
   // Mock user data
-  const userProfile = {
+  const [userProfile, setUserProfile] = useState({
+    userId: "TK-87654321",
     phone: "+91 98765 43210",
     email: "user@example.com",
+    name: "Ravi Kumar",
     profilePicture: "",
     username: "SwiftHawk1234",
-  };
+  });
+
+  // Edit form state
+  const [editForm, setEditForm] = useState({
+    username: userProfile.username,
+    name: userProfile.name,
+    email: userProfile.email,
+  });
 
   // Mock transactions
   const transactions = [
@@ -90,6 +108,48 @@ export default function AccountPage() {
   const handleRecharge = (pack: typeof rechargePacks[0]) => {
     setShowRechargeModal(false);
     setLocation("/user/recharge");
+  };
+
+  const handleEditProfile = () => {
+    setIsEditing(true);
+    setEditForm({
+      username: userProfile.username,
+      name: userProfile.name,
+      email: userProfile.email,
+    });
+  };
+
+  const handleSaveProfile = () => {
+    setUserProfile({
+      ...userProfile,
+      username: editForm.username,
+      name: editForm.name,
+      email: editForm.email,
+    });
+    setIsEditing(false);
+    toast({
+      title: "Profile Updated",
+      description: "Your profile has been updated successfully.",
+    });
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditing(false);
+    setEditForm({
+      username: userProfile.username,
+      name: userProfile.name,
+      email: userProfile.email,
+    });
+  };
+
+  const handleCopyUserId = () => {
+    navigator.clipboard.writeText(userProfile.userId);
+    setCopiedUserId(true);
+    toast({
+      title: "User ID Copied",
+      description: "User ID has been copied to clipboard.",
+    });
+    setTimeout(() => setCopiedUserId(false), 2000);
   };
 
   // Check if support is enabled (user has completed first call)
@@ -135,7 +195,39 @@ export default function AccountPage() {
       <main className="max-w-2xl mx-auto px-4 py-6 space-y-6">
         {/* Profile Section */}
         <Card>
-          <CardContent className="pt-6">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+            <CardTitle className="text-lg">Profile</CardTitle>
+            {!isEditing ? (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleEditProfile}
+                data-testid="button-edit-profile"
+              >
+                <Edit className="w-4 h-4 mr-2" />
+                Edit
+              </Button>
+            ) : (
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleCancelEdit}
+                  data-testid="button-cancel-edit"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  onClick={handleSaveProfile}
+                  data-testid="button-save-profile"
+                >
+                  Save
+                </Button>
+              </div>
+            )}
+          </CardHeader>
+          <CardContent className="space-y-4">
             <div className="flex items-start gap-4">
               <div className="relative">
                 <Avatar className="w-20 h-20">
@@ -153,21 +245,98 @@ export default function AccountPage() {
                   <Camera className="w-4 h-4" />
                 </Button>
               </div>
-              <div className="flex-1">
-                <h2 className="text-lg font-semibold mb-1" data-testid="text-username">
-                  {userProfile.username}
-                </h2>
-                <div className="space-y-1 text-sm text-muted-foreground">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4" />
-                    <span data-testid="text-phone">{userProfile.phone}</span>
-                  </div>
-                  {userProfile.email && (
-                    <div className="flex items-center gap-2">
-                      <Mail className="w-4 h-4" />
-                      <span data-testid="text-email">{userProfile.email}</span>
+              <div className="flex-1 space-y-3">
+                {/* User ID with Copy Button */}
+                <div className="flex items-center gap-2 p-2 bg-muted rounded-md">
+                  <IdCard className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm font-mono flex-1" data-testid="text-user-id">
+                    {userProfile.userId}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2"
+                    onClick={handleCopyUserId}
+                    data-testid="button-copy-user-id"
+                  >
+                    {copiedUserId ? (
+                      <Check className="w-4 h-4 text-success" />
+                    ) : (
+                      <Copy className="w-4 h-4" />
+                    )}
+                  </Button>
+                </div>
+
+                {/* Username */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    Username
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={editForm.username}
+                      onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEditForm({ ...editForm, username: e.target.value })}
+                      placeholder="Enter username"
+                      data-testid="input-username"
+                    />
+                  ) : (
+                    <div className="text-sm font-medium" data-testid="text-username">
+                      {userProfile.username}
                     </div>
                   )}
+                </div>
+
+                {/* Name */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <User className="w-3 h-3" />
+                    Name
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder="Enter name"
+                      data-testid="input-name"
+                    />
+                  ) : (
+                    <div className="text-sm font-medium" data-testid="text-name">
+                      {userProfile.name}
+                    </div>
+                  )}
+                </div>
+
+                {/* Email */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Mail className="w-3 h-3" />
+                    Email
+                  </label>
+                  {isEditing ? (
+                    <Input
+                      type="email"
+                      value={editForm.email}
+                      onChange={(e) => setEditForm({ ...editForm, email: e.target.value })}
+                      placeholder="Enter email"
+                      data-testid="input-email"
+                    />
+                  ) : (
+                    <div className="text-sm font-medium" data-testid="text-email">
+                      {userProfile.email}
+                    </div>
+                  )}
+                </div>
+
+                {/* Mobile (Read-only) */}
+                <div className="space-y-1">
+                  <label className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Phone className="w-3 h-3" />
+                    Mobile Number
+                  </label>
+                  <div className="text-sm font-medium text-muted-foreground" data-testid="text-phone">
+                    {userProfile.phone}
+                  </div>
                 </div>
               </div>
             </div>
