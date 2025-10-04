@@ -30,6 +30,7 @@ import {
   Globe,
   MessageSquare,
   LogOut,
+  ChevronLeft,
   ChevronRight,
   FileText,
   Shield,
@@ -108,7 +109,17 @@ export default function AccountPage() {
     <div className="min-h-screen bg-background pb-24">
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-xl font-bold">Account</h1>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setLocation("/user")}
+              data-testid="button-back"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </Button>
+            <h1 className="text-xl font-bold">Account</h1>
+          </div>
           <Button
             variant="ghost"
             size="sm"
