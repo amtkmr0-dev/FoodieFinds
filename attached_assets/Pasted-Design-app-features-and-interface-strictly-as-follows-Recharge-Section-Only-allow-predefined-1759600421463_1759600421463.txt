@@ -1,0 +1,91 @@
+Design app features and interface strictly as follows:
+
+Recharge Section:
+
+Only allow predefined recharge packs (e.g., “Pay X INR and get Y INR”), controlled solely by Admin via dashboard; strictly no custom amount entry.
+
+Design a visually appealing, unique UI for recharge packs using distinct colors, emojis, or mascot characters as needed to attract users.
+
+On selection of a recharge pack, redirect users directly to payment gateway integration (PayU, Razorpay, Cashfree—implement any/all as per admin choice). Show only INR currency. Minimum balance required to place a call.
+
+Random Match (Homepage):
+
+Implement a pop-in/pop-out floating button for Random Match at the mid-bottom of homepage, using a carefully selected classy color and micro-animation effect. Avoid generic/overrated styles.
+
+Random call price is set and controlled via Admin dashboard.
+
+Profile & Explore Experience:
+
+Homepage contains tabs for Explore, New, Follow. Profiles shuffle every time homepage loads; the Follow button shines/highlights when not followed.
+
+Upon clicking any profile card:
+
+Top section displays: Name, Languages Known, Followers, Country with Flag (India), and prominent Follow button. Add "Follow to get update when [CreatorName] comes online".
+
+Below that, display max 5 pictures and 1 video (max 15 seconds, no audio). Clicking opens single image/video in gallery.
+
+Bottom area: Two buttons — Chat (“Say Hello” as button text), Talk Now (with INR rate).
+
+When “Follow” is clicked on any creator, update so the creator is instantly visible under Follow tab.
+
+Account Section & Settings:
+
+Show all account menu options as single items in the list. Sub-options (e.g., terms, privacy, report) only expand when tapped, maintaining order and a professional feel.
+
+Refer strictly to PRD: Blocked Creators management, transaction history, language selector, support (enabled only after first successful call), DND to suppress fake calls for new users, logout, and all policy/legal documents grouped under Settings subsection.
+
+General:
+
+Conform to all product requirement documents previously shared: admin control for pricing, UI hierarchy, legal compliance, support chat logic, and INR-only payments.
+
+Implement the above features and layout exactly, ensuring all previous requirements in the PRD are met.AI Prompt for Recharge, Homepage, Profile, and Account UI (Talkin User Listener App – as per PRD and recent requirements):
+
+Design the following features and flows for the user app:
+
+Recharge Section:
+
+Only show predefined recharge packs (e.g., Pay X INR, get Y INR), selectable and updatable from the admin dashboard—no custom amount entry.
+
+UI must be elegant and visually attractive: use distinctive colors, emojis, or cartoon characters strategically for customer appeal.
+
+On selecting a recharge pack, redirect user to the selected payment gateway (PayU, Razorpay, Cashfree, as enabled by admin); strictly INR currency, instant balance update post transaction.
+
+Random Match Feature (Homepage):
+
+Implement a stylish pop-in/pop-out floating button at the mid-bottom of homepage for random match (random call); avoid generic designs, choose class-leading color and animation.
+
+Call rate for random match is set from admin dashboard.
+
+Homepage Layout:
+
+Tabs: Explore, New, Follow. Profiles fully shuffle on each visit/page reload.
+
+When clicking any profile card:
+
+Top: Name, languages known, follower count, country flag (India), bold highlighted “Follow” button (with “Follow to get update when [creator name] comes online” text).
+
+Middle: Display max 5 photos + 1 short video (≤15 seconds, no audio); images/videos open in expanded view on click.
+
+Bottom: Two buttons: Chat (text “Say Hello”), Talk Now (show INR rate).
+
+When user follows a creator, that creator profile immediately appears in the Follow tab.
+
+Account Section & Settings (UI/UX):
+
+Show all top-level actions sequentially; sub-options (terms, privacy, report issue, DND, etc.) only reveal after the parent item is tapped (accordion-style).
+
+Settings submenu should include: DND, Terms & Conditions, Terms of Use, Privacy Policy, Refund/Cancellation Policy, Community Guidelines, Content Moderation Policy, Compliance Statement, Report a Problem.
+
+All other user features (blocked creators, talktime transactions, language selection, support, logout) in account section as per the product requirement document.
+
+Support chat is unlocked only after first successful call.
+
+“Blocked Creators” in account lets users view and unblock creators.
+
+Maintain structure, clear labelling, visually consistent hierarchy, and follow all PRD constraints.
+
+Admin Control:
+
+All recharge packs, random match pricing, and policy wording defined and controlled only from admin dashboard.
+
+Strictly follow all prior PRD and documentation for logic, controls, and flows. Ensure features and visuals match exactly as described above.

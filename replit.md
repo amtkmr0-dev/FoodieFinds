@@ -117,16 +117,31 @@ Preferred communication style: Simple, everyday language.
 
 ## Recent Changes (2025-01-04)
 
-**Account Section Implemented**
-- Complete account management page at `/user/account` accessible via profile icon in bottom navigation
-- Profile section displays username (auto-generated), phone number (mandatory), email (optional), and profile picture with upload capability
-- Recharge system with modal displaying 5 recharge packs (₹100 to ₹5000) with bonus incentives
-- Talktime transaction history showing all previous recharges with dates and bonus amounts
-- Blocked creators management with individual unblock functionality
-- Comprehensive Settings section including:
-  - Language selection (first item) with 5 language options displayed full-width
-  - DND toggle to control promotional calls
-  - All legal/policy links (Terms, Privacy, Refund, Community Guidelines, Moderation, Compliance)
-  - Report a Problem option
-- Support chat button (enabled only after first successful call completion)
-- Logout functionality with localStorage cleanup
+**Homepage & Navigation Enhancements**
+- Tabs restructured from New/Follow/Popular to Explore/New/Follow with profile shuffling on mount
+- Random Match floating button added with purple-pink gradient background and pulse animation
+- Random Match positioned at mid-bottom of screen for easy thumb access on mobile
+
+**Creator Profile Enhancements**
+- Languages display showing comma-separated list (e.g., "English, Hindi, Tamil") with translate icon
+- Country badge with India flag icon next to followers count
+- Follow button with animated pulse effect when not following, includes "get updates when online" prompt
+- Media gallery with 3x2 grid: 5 images and 1 video thumbnail with play icon
+- Full-screen image/video dialogs when media is clicked
+- Profile action buttons updated to "Say Hello" (outline) and "Talk Now - ₹X/min" (primary with phone icon)
+
+**Follow/Unfollow System**
+- Complete follow/unfollow functionality with localStorage persistence (key: "followedCreators")
+- Follow state syncs across navigation - persists when visiting creator profile from any tab
+- Follow tab dynamically displays followed creators, refreshes from localStorage on tab activation
+- Unfollow removes creator from Follow tab immediately
+- CreatorProfile uses route params to extract creator ID for proper state management
+
+**Account Section Enhancements**
+- Recharge packs redesigned with emoji mascots (🌟💎🚀👑💰) and gradient borders
+- Pack labels added: Starter, Popular, Best Value, Premium, Ultimate
+- Visual hierarchy with color-coded gradients (yellow→blue→green→purple→gold)
+- Settings restructured with Accordion component:
+  - Language selection and DND toggle as standalone items
+  - Legal & Policies as expandable accordion section containing all policy links
+  - Clean, organized interface following mobile app patterns

@@ -6,6 +6,12 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from "@/components/ui/accordion";
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -60,13 +66,13 @@ export default function AccountPage() {
     { id: "2", name: "Jane Smith", profilePicture: "" },
   ]);
 
-  // Recharge packs
+  // Recharge packs with colors and emojis
   const rechargePacks = [
-    { pay: 100, get: 110, bonus: 10 },
-    { pay: 500, get: 550, bonus: 50 },
-    { pay: 1000, get: 1150, bonus: 150 },
-    { pay: 2000, get: 2350, bonus: 350 },
-    { pay: 5000, get: 6000, bonus: 1000 },
+    { pay: 100, get: 110, bonus: 10, emoji: "🌟", color: "from-blue-500 to-cyan-500", label: "Starter" },
+    { pay: 500, get: 550, bonus: 50, emoji: "💎", color: "from-purple-500 to-pink-500", label: "Popular" },
+    { pay: 1000, get: 1150, bonus: 150, emoji: "🚀", color: "from-orange-500 to-red-500", label: "Best Value" },
+    { pay: 2000, get: 2350, bonus: 350, emoji: "👑", color: "from-yellow-500 to-orange-500", label: "Premium" },
+    { pay: 5000, get: 6000, bonus: 1000, emoji: "💰", color: "from-green-500 to-emerald-500", label: "Ultimate" },
   ];
 
   const languages = ["English", "हिंदी", "தமிழ்", "తెలుగు", "বাংলা"];
@@ -88,79 +94,14 @@ export default function AccountPage() {
   // Check if support is enabled (user has completed first call)
   const supportEnabled = localStorage.getItem("firstCallCompleted") === "true";
 
-  const settingsItems = [
-    {
-      title: "Language",
-      description: "Select your preferred language",
-      icon: Globe,
-      action: (
-        <div className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
-          {languages.map((lang) => (
-            <Badge
-              key={lang}
-              variant={selectedLanguage === lang ? "default" : "outline"}
-              className="cursor-pointer hover-elevate"
-              onClick={() => setSelectedLanguage(lang)}
-              data-testid={`badge-language-${lang}`}
-            >
-              {lang}
-            </Badge>
-          ))}
-        </div>
-      ),
-    },
-    {
-      title: "DND Mode",
-      description: "Stop receiving promotional calls",
-      icon: BellOff,
-      action: (
-        <Switch
-          checked={dndEnabled}
-          onCheckedChange={setDndEnabled}
-          data-testid="switch-dnd"
-        />
-      ),
-    },
-    {
-      title: "Terms and Conditions",
-      icon: FileText,
-      onClick: () => window.open("/legal/terms", "_blank"),
-    },
-    {
-      title: "Terms of Use",
-      icon: FileText,
-      onClick: () => window.open("/legal/terms-of-use", "_blank"),
-    },
-    {
-      title: "Privacy Policy",
-      icon: Shield,
-      onClick: () => window.open("/legal/privacy", "_blank"),
-    },
-    {
-      title: "Refund/Cancellation Policy",
-      icon: FileText,
-      onClick: () => window.open("/legal/refund", "_blank"),
-    },
-    {
-      title: "Community Guidelines",
-      icon: FileText,
-      onClick: () => window.open("/legal/community", "_blank"),
-    },
-    {
-      title: "Content Moderation",
-      icon: Shield,
-      onClick: () => window.open("/legal/moderation", "_blank"),
-    },
-    {
-      title: "Compliance Statement",
-      icon: FileText,
-      onClick: () => window.open("/legal/compliance", "_blank"),
-    },
-    {
-      title: "Report a Problem",
-      icon: AlertCircle,
-      onClick: () => setLocation("/user/report"),
-    },
+  const legalLinks = [
+    { title: "Terms and Conditions", onClick: () => window.open("/legal/terms", "_blank") },
+    { title: "Terms of Use", onClick: () => window.open("/legal/terms-of-use", "_blank") },
+    { title: "Privacy Policy", onClick: () => window.open("/legal/privacy", "_blank") },
+    { title: "Refund/Cancellation Policy", onClick: () => window.open("/legal/refund", "_blank") },
+    { title: "Community Guidelines", onClick: () => window.open("/legal/community", "_blank") },
+    { title: "Content Moderation", onClick: () => window.open("/legal/moderation", "_blank") },
+    { title: "Compliance Statement", onClick: () => window.open("/legal/compliance", "_blank") },
   ];
 
   return (
@@ -344,49 +285,88 @@ export default function AccountPage() {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              {settingsItems.map((item, index) => {
-                const isLanguageOrComplexAction = item.title === "Language";
-                
-                return (
-                  <div key={item.title}>
-                    {index > 0 && <Separator className="my-1" />}
-                    <div
-                      className={`py-3 px-3 ${
-                        item.onClick ? "cursor-pointer hover-elevate rounded-md" : ""
-                      }`}
-                      onClick={item.onClick}
-                      data-testid={`setting-${item.title.toLowerCase().replace(/\s+/g, "-")}`}
-                    >
-                      <div className={`flex items-center ${isLanguageOrComplexAction ? 'mb-3' : 'justify-between'}`}>
-                        <div className="flex items-center gap-3">
-                          <item.icon className="w-5 h-5 text-muted-foreground" />
-                          <div>
-                            <div className="font-medium text-sm">{item.title}</div>
-                            {item.description && (
-                              <div className="text-xs text-muted-foreground">
-                                {item.description}
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                        {!isLanguageOrComplexAction && item.action && (
-                          item.action
-                        )}
-                        {!isLanguageOrComplexAction && !item.action && (
-                          <ChevronRight className="w-4 h-4 text-muted-foreground" />
-                        )}
-                      </div>
-                      {isLanguageOrComplexAction && item.action && (
-                        <div>
-                          {item.action}
-                        </div>
-                      )}
+            <Accordion type="single" collapsible className="w-full">
+              {/* Language */}
+              <AccordionItem value="language">
+                <AccordionTrigger className="py-3">
+                  <div className="flex items-center gap-3">
+                    <Globe className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-medium text-sm">Language</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="flex flex-wrap gap-2 px-3 pb-2">
+                    {languages.map((lang) => (
+                      <Badge
+                        key={lang}
+                        variant={selectedLanguage === lang ? "default" : "outline"}
+                        className="cursor-pointer hover-elevate"
+                        onClick={() => setSelectedLanguage(lang)}
+                        data-testid={`badge-language-${lang}`}
+                      >
+                        {lang}
+                      </Badge>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* DND Mode */}
+              <div className="flex items-center justify-between py-3 px-3 border-b">
+                <div className="flex items-center gap-3">
+                  <BellOff className="w-5 h-5 text-muted-foreground" />
+                  <div>
+                    <div className="font-medium text-sm">DND Mode</div>
+                    <div className="text-xs text-muted-foreground">
+                      Stop receiving promotional calls
                     </div>
                   </div>
-                );
-              })}
-            </div>
+                </div>
+                <Switch
+                  checked={dndEnabled}
+                  onCheckedChange={setDndEnabled}
+                  data-testid="switch-dnd"
+                />
+              </div>
+
+              {/* Legal & Policies */}
+              <AccordionItem value="legal">
+                <AccordionTrigger className="py-3">
+                  <div className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-muted-foreground" />
+                    <span className="font-medium text-sm">Legal & Policies</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent>
+                  <div className="space-y-1">
+                    {legalLinks.map((link) => (
+                      <div
+                        key={link.title}
+                        className="flex items-center justify-between py-2 px-3 cursor-pointer hover-elevate rounded-md"
+                        onClick={link.onClick}
+                        data-testid={`legal-${link.title.toLowerCase().replace(/\s+/g, "-")}`}
+                      >
+                        <span className="text-sm">{link.title}</span>
+                        <ChevronRight className="w-4 h-4 text-muted-foreground" />
+                      </div>
+                    ))}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+
+              {/* Report a Problem */}
+              <div
+                className="flex items-center justify-between py-3 px-3 border-b cursor-pointer hover-elevate rounded-md"
+                onClick={() => setLocation("/user/report")}
+                data-testid="setting-report-a-problem"
+              >
+                <div className="flex items-center gap-3">
+                  <AlertCircle className="w-5 h-5 text-muted-foreground" />
+                  <span className="font-medium text-sm">Report a Problem</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-muted-foreground" />
+              </div>
+            </Accordion>
           </CardContent>
         </Card>
       </main>
@@ -402,35 +382,42 @@ export default function AccountPage() {
           </DialogHeader>
           <div className="space-y-3">
             {rechargePacks.map((pack) => (
-              <Card
+              <div
                 key={pack.pay}
-                className="cursor-pointer hover-elevate active-elevate-2"
+                className={`relative cursor-pointer rounded-xl p-1 bg-gradient-to-r ${pack.color} hover:scale-105 transition-transform duration-200`}
                 onClick={() => handleRecharge(pack)}
                 data-testid={`recharge-pack-${pack.pay}`}
               >
-                <CardContent className="p-4">
+                <div className="bg-background rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <div>
-                      <div className="font-semibold flex items-center gap-1">
-                        <IndianRupee className="w-4 h-4" />
-                        Pay ₹{pack.pay}
-                      </div>
-                      <div className="text-sm text-success">
-                        +₹{pack.bonus} bonus
+                    <div className="flex items-center gap-3">
+                      <span className="text-4xl">{pack.emoji}</span>
+                      <div>
+                        <div className="text-xs font-medium text-muted-foreground uppercase">
+                          {pack.label}
+                        </div>
+                        <div className="font-bold text-lg flex items-center gap-1">
+                          <IndianRupee className="w-4 h-4" />
+                          {pack.pay}
+                        </div>
+                        <div className="text-sm text-success font-medium">
+                          +₹{pack.bonus} bonus
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-lg font-bold flex items-center gap-1">
-                        <IndianRupee className="w-5 h-5" />
-                        Get ₹{pack.get}
+                      <div className="text-xs text-muted-foreground mb-1">You Get</div>
+                      <div className="text-2xl font-bold flex items-center gap-1 bg-gradient-to-r bg-clip-text text-transparent ${pack.color}">
+                        <IndianRupee className="w-6 h-6" />
+                        {pack.get}
                       </div>
-                      <div className="text-xs text-muted-foreground">
+                      <div className="text-xs font-semibold text-success">
                         {Math.round((pack.bonus / pack.pay) * 100)}% extra
                       </div>
                     </div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             ))}
           </div>
         </DialogContent>
