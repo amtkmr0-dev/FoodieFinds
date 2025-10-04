@@ -114,3 +114,19 @@ Preferred communication style: Simple, everyday language.
 - Privacy warnings enforced before call initiation
 - Real-time call duration tracking with per-minute billing calculation
 - Multi-role architecture (user/creator/agency/admin) with app selector pattern
+
+## Recent Changes (2025-01-04)
+
+**Account Section Implemented**
+- Complete account management page at `/user/account` accessible via profile icon in bottom navigation
+- Profile section displays username (auto-generated), phone number (mandatory), email (optional), and profile picture with upload capability
+- Recharge system with modal displaying 5 recharge packs (₹100 to ₹5000) with bonus incentives
+- Talktime transaction history showing all previous recharges with dates and bonus amounts
+- Blocked creators management with individual unblock functionality
+- Comprehensive Settings section including:
+  - Language selection (first item) with 5 language options displayed full-width
+  - DND toggle to control promotional calls
+  - All legal/policy links (Terms, Privacy, Refund, Community Guidelines, Moderation, Compliance)
+  - Report a Problem option
+- Support chat button (enabled only after first successful call completion)
+- Logout functionality with localStorage cleanup
