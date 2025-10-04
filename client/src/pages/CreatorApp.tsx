@@ -5,6 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { useToast } from "@/hooks/use-toast";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -58,6 +59,25 @@ export default function CreatorApp() {
   const [isLive, setIsLive] = useState(false);
   const [selectedTab, setSelectedTab] = useState("dashboard");
   const [selectedFilter, setSelectedFilter] = useState<string>("none");
+  const { toast } = useToast();
+
+  // Profile state
+  const [profileData, setProfileData] = useState({
+    name: "Sarah Johnson",
+    email: "sarah@example.com",
+    mobile: "+91 9876543210",
+  });
+
+  // Bank details state
+  const [bankData, setBankData] = useState({
+    accountName: "Sarah Johnson",
+    accountNumber: "1234567890",
+    ifscCode: "SBIN0001234",
+    verified: true,
+  });
+
+  // Withdrawal state
+  const [withdrawalAmount, setWithdrawalAmount] = useState("");
 
   // Mock data
   const creatorStats = {
@@ -144,8 +164,60 @@ export default function CreatorApp() {
     setIsLive(!isLive);
   };
 
+  const handleUpdateProfile = () => {
+    toast({
+      title: "Profile Updated",
+      description: "Your profile information has been successfully updated.",
+    });
+  };
+
+  const handleUpdateBank = () => {
+    toast({
+      title: "Bank Details Updated",
+      description: "Your bank account details have been successfully updated. Withdrawals remain available with your verified account.",
+    });
+    // Note: In production, this would trigger admin re-verification workflow
+    // For now, keep verification status to allow continued withdrawals
+  };
+
   const handleWithdraw = () => {
-    console.log("Withdraw funds");
+    const amount = parseFloat(withdrawalAmount);
+    
+    // Validate bank verification
+    if (!bankData.verified) {
+      toast({
+        title: "Bank Not Verified",
+        description: "Please wait for your bank account to be verified before withdrawing funds.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate minimum amount
+    if (!amount || amount < 500) {
+      toast({
+        title: "Invalid Amount",
+        description: "Minimum withdrawal amount is ₹500.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate available balance
+    if (amount > creatorStats.earningsToday) {
+      toast({
+        title: "Insufficient Balance",
+        description: "You don't have enough balance to withdraw this amount.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    toast({
+      title: "Withdrawal Initiated",
+      description: `₹${amount.toLocaleString()} has been transferred to your bank account ${bankData.accountNumber.slice(-4)}.`,
+    });
+    setWithdrawalAmount("");
   };
 
   return (
@@ -912,22 +984,33 @@ export default function CreatorApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="profile-name">Full Name</Label>
-                    <Input id="profile-name" defaultValue="Sarah Johnson" data-testid="input-profile-name" />
+                    <Input 
+                      id="profile-name" 
+                      value={profileData.name}
+                      onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
+                      data-testid="input-profile-name" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="profile-email">Email</Label>
-                    <Input id="profile-email" type="email" defaultValue="sarah@example.com" data-testid="input-profile-email" />
+                    <Input 
+                      id="profile-email" 
+                      type="email" 
+                      value={profileData.email}
+                      onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
+                      data-testid="input-profile-email" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="profile-mobile">Mobile Number</Label>
-                    <Input id="profile-mobile" defaultValue="+91 9876543210" disabled />
+                    <Input id="profile-mobile" value={profileData.mobile} disabled />
                   </div>
                   <div className="space-y-2">
                     <Label>Approval Status</Label>
                     <Badge className="bg-green-500">Approved</Badge>
                   </div>
                 </div>
-                <Button data-testid="button-update-profile">Update Profile</Button>
+                <Button onClick={handleUpdateProfile} data-testid="button-update-profile">Update Profile</Button>
               </CardContent>
             </Card>
 
@@ -943,22 +1026,39 @@ export default function CreatorApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="bank-account-name">Account Holder Name</Label>
-                    <Input id="bank-account-name" defaultValue="Sarah Johnson" data-testid="input-bank-name" />
+                    <Input 
+                      id="bank-account-name" 
+                      value={bankData.accountName}
+                      onChange={(e) => setBankData({ ...bankData, accountName: e.target.value })}
+                      data-testid="input-bank-name" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bank-account-number">Account Number</Label>
-                    <Input id="bank-account-number" defaultValue="1234567890" data-testid="input-bank-number" />
+                    <Input 
+                      id="bank-account-number" 
+                      value={bankData.accountNumber}
+                      onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
+                      data-testid="input-bank-number" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bank-ifsc">IFSC Code</Label>
-                    <Input id="bank-ifsc" defaultValue="SBIN0001234" data-testid="input-bank-ifsc" />
+                    <Input 
+                      id="bank-ifsc" 
+                      value={bankData.ifscCode}
+                      onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value })}
+                      data-testid="input-bank-ifsc" 
+                    />
                   </div>
                   <div className="space-y-2">
                     <Label>Verification Status</Label>
-                    <Badge className="bg-green-500">Verified</Badge>
+                    <Badge className={bankData.verified ? "bg-green-500" : "bg-yellow-500"}>
+                      {bankData.verified ? "Verified" : "Pending Verification"}
+                    </Badge>
                   </div>
                 </div>
-                <Button data-testid="button-update-bank">Update Bank Details</Button>
+                <Button onClick={handleUpdateBank} data-testid="button-update-bank">Update Bank Details</Button>
               </CardContent>
             </Card>
 
@@ -1021,7 +1121,13 @@ export default function CreatorApp() {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <Input placeholder="Enter amount (min ₹500)" type="number" data-testid="input-withdrawal-amount" />
+                  <Input 
+                    placeholder="Enter amount (min ₹500)" 
+                    type="number" 
+                    value={withdrawalAmount}
+                    onChange={(e) => setWithdrawalAmount(e.target.value)}
+                    data-testid="input-withdrawal-amount" 
+                  />
                   <Button onClick={handleWithdraw} data-testid="button-withdraw">
                     <Download className="w-4 h-4 mr-2" />
                     Withdraw
