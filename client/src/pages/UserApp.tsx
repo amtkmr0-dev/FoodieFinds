@@ -13,6 +13,7 @@ export default function UserApp() {
   const [balance] = useState(450);
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const [activeTab, setActiveTab] = useState("explore");
+  const [showRandomMatch, setShowRandomMatch] = useState(false);
   const [followedCreators, setFollowedCreators] = useState<string[]>(() => {
     const saved = localStorage.getItem("followedCreators");
     return saved ? JSON.parse(saved) : [];
@@ -162,6 +163,14 @@ export default function UserApp() {
     }
   }, [activeTab]);
 
+  // Slow popup animation for Random Match button - appears after 1 second
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setShowRandomMatch(true);
+    }, 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
@@ -239,10 +248,14 @@ export default function UserApp() {
         </Tabs>
       </main>
 
-      {/* Floating Random Match Button */}
+      {/* Floating Random Match Button - Slow popup with smooth animations */}
       <Button
         size="lg"
-        className="fixed bottom-24 left-1/2 -translate-x-1/2 z-20 shadow-lg hover:scale-105 transition-transform duration-200 bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 animate-pulse"
+        className={`fixed bottom-28 left-1/2 -translate-x-1/2 z-50 shadow-2xl transition-all duration-700 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
+          showRandomMatch 
+            ? 'opacity-100 translate-y-0' 
+            : 'opacity-0 translate-y-16 pointer-events-none'
+        }`}
         onClick={() => setShowIncomingCall(true)}
         data-testid="button-random-match"
       >
