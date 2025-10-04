@@ -187,36 +187,42 @@ export default function AccountPage() {
 
         {/* Talktime Transactions */}
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <History className="w-5 h-5" />
-              Talktime Transactions
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {transactions.map((tx) => (
-                <div
-                  key={tx.id}
-                  className="flex items-center justify-between py-2"
-                  data-testid={`transaction-${tx.id}`}
-                >
-                  <div>
-                    <div className="font-medium">₹{tx.total}</div>
-                    <div className="text-xs text-muted-foreground">{tx.date}</div>
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="transactions" className="border-0">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="button-talktime-transactions">
+                  <div className="flex items-center gap-2">
+                    <History className="w-5 h-5" />
+                    <span className="font-semibold">Talktime Transactions</span>
                   </div>
-                  <div className="text-right">
-                    <div className="text-sm">Paid ₹{tx.amount}</div>
-                    <div className="text-xs text-success">+₹{tx.bonus} bonus</div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-4">
+                  <div className="space-y-3">
+                    {transactions.map((tx) => (
+                      <div
+                        key={tx.id}
+                        className="flex items-center justify-between py-2"
+                        data-testid={`transaction-${tx.id}`}
+                      >
+                        <div>
+                          <div className="font-medium">₹{tx.total}</div>
+                          <div className="text-xs text-muted-foreground">{tx.date}</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-sm">Paid ₹{tx.amount}</div>
+                          <div className="text-xs text-success">+₹{tx.bonus} bonus</div>
+                        </div>
+                      </div>
+                    ))}
+                    {transactions.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No transactions yet
+                      </p>
+                    )}
                   </div>
-                </div>
-              ))}
-              {transactions.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No transactions yet
-                </p>
-              )}
-            </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
           </CardContent>
         </Card>
 
