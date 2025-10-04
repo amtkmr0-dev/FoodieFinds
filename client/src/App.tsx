@@ -15,6 +15,7 @@ import CreatorSignup from "@/pages/CreatorSignup";
 import RechargePage from "@/pages/RechargePage";
 import SupportChatPage from "@/pages/SupportChatPage";
 import AdminBroadcast from "@/pages/AdminBroadcast";
+import AccountPage from "@/pages/AccountPage";
 import { CallInterface } from "@/components/CallInterface";
 import NotFound from "@/pages/not-found";
 
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/signup" component={SignupLogin} />
       <Route path="/creator-signup" component={CreatorSignup} />
       <Route path="/user" component={UserApp} />
+      <Route path="/user/account" component={AccountPage} />
       <Route path="/user/creator/:id" component={CreatorProfile} />
       <Route path="/user/recharge" component={RechargePage} />
       <Route path="/user/support" component={SupportChatPage} />

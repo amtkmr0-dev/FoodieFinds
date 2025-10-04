@@ -1,0 +1,132 @@
+Implement an Account section UI and workflow with the following features and arrangement, maintaining a professional, intuitive layout:
+
+User Profile (Top of Screen):
+
+Display mobile number (mandatory), email (optional), and profile picture (optional).
+
+Profile picture area includes an upload icon, enabling users to update or add their photo easily.
+
+Recharge Option:
+
+Prominently display a 'Recharge' button.
+
+On clicking, show multiple recharge packs, e.g., “Pay X INR, get Y INR”.
+
+Logout Button:
+
+Accessible directly from the account section.
+
+Language Selection:
+
+Option to pick preferred app language.
+
+Talktime Transactions:
+
+Section listing all previous recharge transactions for transparency.
+
+Blocked Creators:
+
+List view of all blocked creators/users.
+
+Allow users to unblock contacts individually.
+
+Support Option:
+
+Support chat enabled after the user's first successful call only.
+
+Button or link to launch support chat with admin.
+
+Profile Settings (under Settings):
+
+DND Option:
+
+Enable/disable DND to stop receiving fake calls on first installs without recharge. When DND is off, user receives system-generated fake calls; on accepting, redirect to recharge.
+
+Legal & Policy Links:
+
+Terms and Conditions
+
+Terms of Use
+
+Privacy Policy
+
+Refund/Cancellation Policy
+
+Community Guidelines
+
+Content Moderation
+
+Compliance Statement
+
+Report a Problem:
+
+Option to report bugs/issues directly from settings.
+
+Settings Panel Arrangement:
+Group all policy/legal links, DND, Report a Problem, and language selection under a ‘Settings’ submenu within the account page. Maintain orderly, professional hierarchy; use icons and clear labels for ease of use.
+
+Integration Notes:
+Reference features/specifications from provided PDF, focusing on fast registration, INR-only recharge, call restrictions, support access flow, blocked creators management, mandatory phone/email fields, and settings organization requirements.AI Prompt for Account Section & Settings in User App (based on PDF requirements):
+
+Design the account section of the user app with the following detailed features and layout:
+
+Profile (Top):
+
+Show user's mobile number (mandatory), email (optional), and profile picture (optional).
+
+Provide an icon on the profile picture for easy uploading or updating.
+
+Recharge:
+
+Prominent recharge button.
+
+On click, display multiple recharge options such as “Pay [X] INR and get [Y] INR.”
+
+Logout:
+
+Clearly accessible logout button.
+
+Language Selection:
+
+Option for users to select their preferred application language.
+
+Talktime Transactions:
+
+List the user's recharge and transaction history.
+
+Blocked Creators:
+
+Display a list of blocked contacts with option to unblock.
+
+Support:
+
+Support chat button, available only after user's first successful call.
+
+Settings Section:
+Arrange the following features under a “Settings” subsection in the account page:
+
+DND: Toggle to stop receiving fake calls before recharge. While DND is off, fake calls continue, redirecting user to recharge on acceptance.
+
+Terms and Conditions
+
+Terms of Use
+
+Privacy Policy
+
+Refund/Cancellation Policy
+
+Community Guidelines
+
+Content Moderation
+
+Compliance Statement
+
+Report a Problem: Direct option to submit issues or feedback.
+
+Requirements:
+
+All policy, moderation, and compliance-related options to be grouped and clearly labeled in the Settings area of the account page.
+
+Use icons and intuitive arrangement for a professional, user-friendly experience.
+
+Features and arrangement must follow the specifications from the provided PDF (registration, recharge, transaction, support, and blocked list logic)

@@ -142,7 +142,12 @@ export default function UserApp() {
           >
             <MessageSquare className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" data-testid="button-nav-profile">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLocation("/user/account")}
+            data-testid="button-nav-profile"
+          >
             <User className="w-5 h-5" />
           </Button>
         </div>
