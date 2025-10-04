@@ -1,14 +1,39 @@
 import { useState } from "react";
 import { CreatorProfileHeader } from "@/components/CreatorProfileHeader";
+import { PrivacyWarningModal } from "@/components/PrivacyWarningModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { ChevronLeft, Lock } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function CreatorProfile() {
   const [, setLocation] = useLocation();
   const [isFollowing, setIsFollowing] = useState(false);
+  const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
+  const { toast } = useToast();
+  const currentBalance = 450;
+  const pricePerMinute = 45;
+  const minBalance = pricePerMinute * 3;
+
+  const handleTalkNow = () => {
+    if (currentBalance < minBalance) {
+      toast({
+        title: "Insufficient Balance",
+        description: `You need minimum ₹${minBalance} (3 minutes) to initiate a call. Please recharge.`,
+        variant: "destructive",
+      });
+      setLocation("/user/recharge");
+      return;
+    }
+    setShowPrivacyWarning(true);
+  };
+
+  const handleAcceptPrivacy = () => {
+    setShowPrivacyWarning(false);
+    setLocation("/user/call");
+  };
 
   const profileImages = [
     "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
@@ -40,7 +65,7 @@ export default function CreatorProfile() {
           price={45}
           isOnline={true}
           isFollowing={isFollowing}
-          onTalkNow={() => setLocation("/user/call")}
+          onTalkNow={handleTalkNow}
           onFollow={() => setIsFollowing(!isFollowing)}
         />
 
@@ -131,6 +156,13 @@ export default function CreatorProfile() {
           </Button>
         </div>
       </main>
+
+      {showPrivacyWarning && (
+        <PrivacyWarningModal
+          onAccept={handleAcceptPrivacy}
+          onCancel={() => setShowPrivacyWarning(false)}
+        />
+      )}
     </div>
   );
 }

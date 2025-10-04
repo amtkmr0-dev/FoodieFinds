@@ -134,7 +134,12 @@ export default function UserApp() {
           <Button variant="ghost" size="icon" data-testid="button-nav-home">
             <Home className="w-5 h-5" />
           </Button>
-          <Button variant="ghost" size="icon" data-testid="button-nav-messages">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            onClick={() => setLocation("/user/support")}
+            data-testid="button-nav-messages"
+          >
             <MessageSquare className="w-5 h-5" />
           </Button>
           <Button variant="ghost" size="icon" data-testid="button-nav-profile">

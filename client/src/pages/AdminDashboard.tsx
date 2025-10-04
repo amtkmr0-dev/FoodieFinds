@@ -4,6 +4,7 @@ import { UserListItem } from "@/components/UserListItem";
 import { ApprovalItem } from "@/components/ApprovalItem";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import {
   Select,
@@ -12,9 +13,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Users, DollarSign, UserPlus, TrendingUp } from "lucide-react";
+import { Users, DollarSign, UserPlus, TrendingUp, Send, Wallet, FileText, Download } from "lucide-react";
+import { useLocation } from "wouter";
 
 export default function AdminDashboard() {
+  const [, setLocation] = useLocation();
   const [timeFilter, setTimeFilter] = useState("today");
 
   const stats = [
@@ -155,22 +158,53 @@ export default function AdminDashboard() {
           </TabsContent>
 
           <TabsContent value="finance">
-            <div className="border rounded-xl p-6">
-              <h3 className="font-semibold mb-4">Financial Overview</h3>
-              <div className="space-y-4">
-                <div className="flex justify-between p-4 bg-secondary rounded-lg">
-                  <span className="text-muted-foreground">Total Revenue</span>
-                  <span className="font-semibold">₹1,23,450</span>
-                </div>
-                <div className="flex justify-between p-4 bg-secondary rounded-lg">
-                  <span className="text-muted-foreground">Total Expenses</span>
-                  <span className="font-semibold">₹45,230</span>
-                </div>
-                <div className="flex justify-between p-4 bg-primary/10 rounded-lg">
-                  <span className="font-semibold">Net Profit</span>
-                  <span className="font-bold text-primary">₹78,220</span>
+            <div className="space-y-6">
+              <div className="border rounded-xl p-6">
+                <h3 className="font-semibold mb-4">Financial Overview</h3>
+                <div className="space-y-4">
+                  <div className="flex justify-between p-4 bg-secondary rounded-lg">
+                    <span className="text-muted-foreground">Total Revenue</span>
+                    <span className="font-semibold">₹1,23,450</span>
+                  </div>
+                  <div className="flex justify-between p-4 bg-secondary rounded-lg">
+                    <span className="text-muted-foreground">Total Expenses</span>
+                    <span className="font-semibold">₹45,230</span>
+                  </div>
+                  <div className="flex justify-between p-4 bg-primary/10 rounded-lg">
+                    <span className="font-semibold">Net Profit</span>
+                    <span className="font-bold text-primary">₹78,220</span>
+                  </div>
                 </div>
               </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="p-6 hover-elevate cursor-pointer" onClick={() => console.log("Expenses")} data-testid="card-expenses">
+                  <FileText className="w-8 h-8 mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Expenses</h3>
+                  <p className="text-sm text-muted-foreground">Track and manage expenses</p>
+                </Card>
+
+                <Card className="p-6 hover-elevate cursor-pointer" onClick={() => console.log("Withdrawals")} data-testid="card-withdrawals">
+                  <Wallet className="w-8 h-8 mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Withdrawals</h3>
+                  <p className="text-sm text-muted-foreground">Manage creator payouts</p>
+                </Card>
+
+                <Card className="p-6 hover-elevate cursor-pointer" onClick={() => console.log("Payment Reconciliation")} data-testid="card-reconciliation">
+                  <Download className="w-8 h-8 mb-3 text-primary" />
+                  <h3 className="font-semibold mb-1">Reconciliation</h3>
+                  <p className="text-sm text-muted-foreground">Payment gateway sync</p>
+                </Card>
+              </div>
+
+              <Button 
+                className="w-full" 
+                onClick={() => setLocation("/admin/broadcast")}
+                data-testid="button-broadcast"
+              >
+                <Send className="w-4 h-4 mr-2" />
+                Broadcast Message
+              </Button>
             </div>
           </TabsContent>
         </Tabs>

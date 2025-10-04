@@ -10,6 +10,11 @@ import UserApp from "@/pages/UserApp";
 import CreatorProfile from "@/pages/CreatorProfile";
 import CreatorApp from "@/pages/CreatorApp";
 import AdminDashboard from "@/pages/AdminDashboard";
+import SignupLogin from "@/pages/SignupLogin";
+import CreatorSignup from "@/pages/CreatorSignup";
+import RechargePage from "@/pages/RechargePage";
+import SupportChatPage from "@/pages/SupportChatPage";
+import AdminBroadcast from "@/pages/AdminBroadcast";
 import { CallInterface } from "@/components/CallInterface";
 import NotFound from "@/pages/not-found";
 
@@ -28,8 +33,12 @@ function Router() {
         if (selectedApp === "admin") return <AdminDashboard />;
         return <AppSelector onSelectApp={setSelectedApp} />;
       }} />
+      <Route path="/signup" component={SignupLogin} />
+      <Route path="/creator-signup" component={CreatorSignup} />
       <Route path="/user" component={UserApp} />
       <Route path="/user/creator/:id" component={CreatorProfile} />
+      <Route path="/user/recharge" component={RechargePage} />
+      <Route path="/user/support" component={SupportChatPage} />
       <Route path="/user/call" component={() => (
         <CallInterface
           creatorName="Sarah Johnson"
@@ -37,11 +46,12 @@ function Router() {
           currentBalance={450}
           onEndCall={() => window.location.href = "/user"}
           onSendGift={() => console.log("Send gift")}
-          onRecharge={() => console.log("Recharge")}
+          onRecharge={() => window.location.href = "/user/recharge"}
         />
       )} />
       <Route path="/creator" component={CreatorApp} />
       <Route path="/admin" component={AdminDashboard} />
+      <Route path="/admin/broadcast" component={AdminBroadcast} />
       <Route component={NotFound} />
     </Switch>
   );
