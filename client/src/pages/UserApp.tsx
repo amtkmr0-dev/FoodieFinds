@@ -177,7 +177,10 @@ export default function UserApp() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <h1 className="text-xl font-bold">Talkin</h1>
           <div className="flex items-center gap-3">
-            <BalanceDisplay balance={balance} />
+            <BalanceDisplay 
+              balance={balance} 
+              onClick={() => setLocation("/user/recharge")}
+            />
             <ThemeToggle />
           </div>
         </div>
