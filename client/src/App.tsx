@@ -62,11 +62,9 @@ function Router() {
       <Route path="/user/call" component={() => (
         <CallInterface
           creatorName="Sarah Johnson"
+          creatorId="1"
           pricePerMinute={45}
-          currentBalance={450}
           onEndCall={() => window.location.href = "/user"}
-          onSendGift={() => console.log("Send gift")}
-          onRecharge={() => window.location.href = "/user/recharge"}
         />
       )} />
       

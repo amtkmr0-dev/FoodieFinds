@@ -7,10 +7,11 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { IncomingCallModal } from "@/components/IncomingCallModal";
 import { Home, Heart, Shuffle, MessageSquare, User } from "lucide-react";
 import { useLocation } from "wouter";
+import { useWallet } from "@/hooks/useWallet";
 
 export default function UserApp() {
   const [, setLocation] = useLocation();
-  const [balance] = useState(450);
+  const { balance } = useWallet();
   const [showIncomingCall, setShowIncomingCall] = useState(false);
   const [activeTab, setActiveTab] = useState("explore");
   const [showRandomMatch, setShowRandomMatch] = useState(false);

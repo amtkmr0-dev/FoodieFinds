@@ -9,6 +9,7 @@ import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { ChevronLeft, Play } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@/hooks/useWallet";
 
 // Mock creator data - in real app this would come from API
 const creatorsData = [
@@ -152,12 +153,12 @@ export default function CreatorProfile() {
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
   const [selectedMedia, setSelectedMedia] = useState<{ type: 'image' | 'video', url: string } | null>(null);
   const { toast } = useToast();
-  const currentBalance = 450;
+  const { balance } = useWallet();
   const pricePerMinute = creator.price;
   const minBalance = pricePerMinute * 3;
 
   const handleTalkNow = () => {
-    if (currentBalance < minBalance) {
+    if (balance < minBalance) {
       toast({
         title: "Insufficient Balance",
         description: `You need minimum ₹${minBalance} (3 minutes) to initiate a call. Please recharge.`,

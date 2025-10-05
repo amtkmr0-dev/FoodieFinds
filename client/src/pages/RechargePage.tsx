@@ -6,12 +6,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { ChevronLeft, Wallet, CreditCard, Smartphone, Building2 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useWallet } from "@/hooks/useWallet";
 
 export default function RechargePage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const [currentBalance] = useState(120);
+  const { balance, recharge } = useWallet();
   const [selectedAmount, setSelectedAmount] = useState<number | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const handleSelectAmount = (amount: number) => {
     setSelectedAmount(amount);
@@ -41,20 +43,37 @@ export default function RechargePage() {
     },
   ];
 
-  const handleSelectMethod = (method: string) => {
+  const handleSelectMethod = async (method: string) => {
+    if (!selectedAmount || isProcessing) return;
+    
+    setIsProcessing(true);
     toast({
       title: "Processing Payment",
       description: `Redirecting to ${paymentMethods.find(m => m.id === method)?.name} for ₹${selectedAmount}...`,
     });
     
-    setTimeout(() => {
-      toast({
-        title: "Payment Successful!",
-        description: `₹${selectedAmount} has been added to your wallet.`,
-      });
-      setTimeout(() => {
-        setLocation("/user/account");
-      }, 1500);
+    setTimeout(async () => {
+      try {
+        // Actually recharge the wallet
+        await recharge(selectedAmount, method);
+        
+        toast({
+          title: "Payment Successful!",
+          description: `₹${selectedAmount} has been added to your wallet.`,
+        });
+        
+        setTimeout(() => {
+          setLocation("/user");
+        }, 1500);
+      } catch (error: any) {
+        toast({
+          title: "Payment Failed",
+          description: error.message || "Something went wrong. Please try again.",
+          variant: "destructive",
+        });
+      } finally {
+        setIsProcessing(false);
+      }
     }, 1500);
   };
 
@@ -83,9 +102,9 @@ export default function RechargePage() {
             <span className="text-muted-foreground">Current Balance</span>
             <Wallet className="w-5 h-5 text-primary" />
           </div>
-          <div className="text-4xl font-bold mb-2">₹{currentBalance}</div>
-          <Badge variant={currentBalance < 135 ? "destructive" : "secondary"}>
-            {currentBalance < 135 ? "Low Balance - Minimum ₹135 needed" : "Sufficient for calls"}
+          <div className="text-4xl font-bold mb-2">₹{balance.toFixed(2)}</div>
+          <Badge variant={balance < 135 ? "destructive" : "secondary"}>
+            {balance < 135 ? "Low Balance - Minimum ₹135 needed" : "Sufficient for calls"}
           </Badge>
         </Card>
 

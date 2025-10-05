@@ -3,27 +3,29 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { PhoneOff, Gift, Wallet } from "lucide-react";
+import { GiftSelectionModal } from "./GiftSelectionModal";
+import { useWallet } from "@/hooks/useWallet";
+import { useLocation } from "wouter";
 
 interface CallInterfaceProps {
   creatorName: string;
   creatorImage?: string;
+  creatorId: string;
   pricePerMinute: number;
-  currentBalance: number;
   onEndCall?: () => void;
-  onSendGift?: () => void;
-  onRecharge?: () => void;
 }
 
 export function CallInterface({
   creatorName,
   creatorImage,
+  creatorId,
   pricePerMinute,
-  currentBalance,
   onEndCall,
-  onSendGift,
-  onRecharge,
 }: CallInterfaceProps) {
   const [duration, setDuration] = useState(0);
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const { balance } = useWallet();
+  const [, setLocation] = useLocation();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -39,7 +41,7 @@ export function CallInterface({
   };
 
   const cost = Math.ceil(duration / 60) * pricePerMinute;
-  const remainingBalance = currentBalance - cost;
+  const remainingBalance = balance - cost;
 
   const initials = creatorName
     .split(" ")
@@ -53,7 +55,18 @@ export function CallInterface({
     onEndCall?.();
   };
 
+  const handleRecharge = () => {
+    setLocation("/user/recharge");
+  };
+
   return (
+    <>
+      <GiftSelectionModal
+        isOpen={showGiftModal}
+        onClose={() => setShowGiftModal(false)}
+        creatorId={creatorId}
+        creatorName={creatorName}
+      />
     <div className="fixed inset-0 z-50 bg-gradient-to-b from-primary/20 via-background to-background flex flex-col">
       <div className="flex-1 flex flex-col items-center justify-center p-6">
         <Avatar className="w-32 h-32 mb-6 ring-4 ring-primary/20">
@@ -92,7 +105,7 @@ export function CallInterface({
           <Button
             variant="outline"
             className="flex-1"
-            onClick={onSendGift}
+            onClick={() => setShowGiftModal(true)}
             data-testid="button-send-gift"
           >
             <Gift className="w-5 h-5 mr-2" />
@@ -101,7 +114,7 @@ export function CallInterface({
           <Button
             variant="outline"
             className="flex-1"
-            onClick={onRecharge}
+            onClick={handleRecharge}
             data-testid="button-recharge"
           >
             <Wallet className="w-5 h-5 mr-2" />
@@ -110,5 +123,6 @@ export function CallInterface({
         </div>
       </div>
     </div>
+    </>
   );
 }
