@@ -13,6 +13,7 @@ export default function UserApp() {
   const [, setLocation] = useLocation();
   const { balance } = useWallet();
   const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const [randomMatchedCreator, setRandomMatchedCreator] = useState<any>(null);
   const [activeTab, setActiveTab] = useState("explore");
   const [showRandomMatch, setShowRandomMatch] = useState(false);
   const [followedCreators, setFollowedCreators] = useState<string[]>(() => {
@@ -30,6 +31,7 @@ export default function UserApp() {
       followers: 1250,
       languages: ["English", "Hindi", "Tamil"],
       isOnline: true,
+      randomMatchEnabled: true,
       aboutMe: "Friendly conversationalist who loves discussing life experiences and offering advice on personal growth.",
       talksAbout: ["Life coaching", "Relationships", "Career guidance", "Mental wellness"],
       hobbies: ["Reading", "Yoga", "Traveling", "Cooking"],
@@ -44,6 +46,7 @@ export default function UserApp() {
       followers: 890,
       languages: ["Hindi", "English"],
       isOnline: false,
+      randomMatchEnabled: false,
       aboutMe: "Tech enthusiast and startup mentor with 10 years of experience in software development.",
       talksAbout: ["Technology", "Startups", "Programming", "Career advice"],
       hobbies: ["Gaming", "Photography", "Blogging"],
@@ -58,6 +61,7 @@ export default function UserApp() {
       followers: 2100,
       languages: ["English", "Hindi", "Marathi"],
       isOnline: true,
+      randomMatchEnabled: true,
       aboutMe: "Business consultant and motivational speaker passionate about empowering entrepreneurs.",
       talksAbout: ["Business strategy", "Entrepreneurship", "Marketing", "Leadership"],
       hobbies: ["Public speaking", "Writing", "Gardening"],
@@ -72,6 +76,7 @@ export default function UserApp() {
       followers: 1500,
       languages: ["Gujarati", "Hindi", "English"],
       isOnline: true,
+      randomMatchEnabled: false,
       aboutMe: "Finance expert helping people make smart investment decisions and achieve financial freedom.",
       talksAbout: ["Investment", "Stock market", "Personal finance", "Real estate"],
       hobbies: ["Reading", "Playing guitar", "Hiking"],
@@ -86,6 +91,7 @@ export default function UserApp() {
       followers: 1780,
       languages: ["English", "Hindi", "Punjabi"],
       isOnline: true,
+      randomMatchEnabled: true,
       aboutMe: "Fashion designer and lifestyle blogger who loves sharing creative ideas and style tips.",
       talksAbout: ["Fashion", "Lifestyle", "Beauty", "Social media"],
       hobbies: ["Sketching", "Shopping", "Dancing", "Photography"],
@@ -100,6 +106,7 @@ export default function UserApp() {
       followers: 750,
       languages: ["Hindi", "English"],
       isOnline: false,
+      randomMatchEnabled: false,
       aboutMe: "Fitness trainer and nutrition coach dedicated to helping people achieve their health goals.",
       talksAbout: ["Fitness", "Nutrition", "Weight loss", "Muscle building"],
       hobbies: ["Gym training", "Sports", "Cooking healthy meals"],
@@ -114,6 +121,7 @@ export default function UserApp() {
       followers: 1320,
       languages: ["English", "Hindi", "Bengali"],
       isOnline: true,
+      randomMatchEnabled: true,
       aboutMe: "Psychologist and counselor specializing in stress management and emotional well-being.",
       talksAbout: ["Mental health", "Stress management", "Relationships", "Self-care"],
       hobbies: ["Meditation", "Reading", "Painting", "Listening to music"],
@@ -128,6 +136,7 @@ export default function UserApp() {
       followers: 1950,
       languages: ["Hindi", "English", "Urdu"],
       isOnline: true,
+      randomMatchEnabled: false,
       aboutMe: "Digital marketing expert helping brands grow their online presence and reach their audience.",
       talksAbout: ["Digital marketing", "SEO", "Content creation", "Brand building"],
       hobbies: ["Traveling", "Photography", "Blogging", "Music"],
@@ -142,6 +151,7 @@ export default function UserApp() {
       followers: 1650,
       languages: ["English", "Tamil", "Hindi"],
       isOnline: false,
+      randomMatchEnabled: false,
       aboutMe: "Classical dancer and arts enthusiast sharing insights on Indian culture and performing arts.",
       talksAbout: ["Dance", "Indian culture", "Arts", "Music", "Traditions"],
       hobbies: ["Dancing", "Teaching", "Traveling", "Cooking"],
@@ -171,6 +181,23 @@ export default function UserApp() {
     }, 1000);
     return () => clearTimeout(timer);
   }, []);
+
+  // Handle Random Match - select from online creators with randomMatchEnabled
+  const handleRandomMatch = () => {
+    const eligibleCreators = creators.filter(
+      (creator) => creator.isOnline && creator.randomMatchEnabled
+    );
+    
+    if (eligibleCreators.length === 0) {
+      // No creators available for random match
+      return;
+    }
+    
+    // Pick a random creator from eligible ones
+    const randomCreator = eligibleCreators[Math.floor(Math.random() * eligibleCreators.length)];
+    setRandomMatchedCreator(randomCreator);
+    setShowIncomingCall(true);
+  };
 
   return (
     <div className="min-h-screen bg-background pb-20">
@@ -264,7 +291,7 @@ export default function UserApp() {
                 : 'opacity-0 scale-90 pointer-events-none'
             }`}
             style={{ animationDuration: '2s' }}
-            onClick={() => setShowIncomingCall(true)}
+            onClick={handleRandomMatch}
             data-testid="button-random-match"
           >
             <Shuffle className="w-5 h-5 mr-2" />
@@ -298,15 +325,18 @@ export default function UserApp() {
         </nav>
       </div>
 
-      {showIncomingCall && (
+      {showIncomingCall && randomMatchedCreator && (
         <IncomingCallModal
-          callerName="System Call"
-          pricePerMinute={45}
+          callerName={randomMatchedCreator.name}
+          pricePerMinute={25}
           onAccept={() => {
             setShowIncomingCall(false);
-            setLocation("/user/recharge");
+            setLocation(`/user/call/${randomMatchedCreator.id}`);
           }}
-          onReject={() => setShowIncomingCall(false)}
+          onReject={() => {
+            setShowIncomingCall(false);
+            setRandomMatchedCreator(null);
+          }}
         />
       )}
     </div>
