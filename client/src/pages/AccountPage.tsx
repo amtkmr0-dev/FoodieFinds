@@ -48,6 +48,8 @@ import {
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
 
 export default function AccountPage() {
   const [, setLocation] = useLocation();
@@ -138,6 +140,22 @@ export default function AccountPage() {
     setSelectedPack(pack);
   };
 
+  const rechargeMutation = useMutation({
+    mutationFn: async (data: { amount: number; paymentMethod: string }) => {
+      const userId = localStorage.getItem("linky_device_id") || "user_001";
+      const response = await apiRequest("POST", "/api/wallet/recharge", {
+        userId,
+        amount: data.amount.toString(),
+        paymentMethod: data.paymentMethod,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+      localStorage.setItem("firstRechargeCompleted", "true");
+    },
+  });
+
   const handleSelectPayment = (method: string) => {
     if (!selectedPack) return;
     
@@ -147,17 +165,28 @@ export default function AccountPage() {
     });
     
     setTimeout(() => {
-      // Mark first recharge as completed
-      localStorage.setItem("firstRechargeCompleted", "true");
-      
-      toast({
-        title: "Payment Successful!",
-        description: `₹${selectedPack.get} has been added to your wallet.`,
-      });
-      setTimeout(() => {
-        setShowRechargeModal(false);
-        setSelectedPack(null);
-      }, 1500);
+      rechargeMutation.mutate(
+        { amount: selectedPack.get, paymentMethod: method },
+        {
+          onSuccess: () => {
+            toast({
+              title: "Payment Successful!",
+              description: `₹${selectedPack.get} has been added to your wallet.`,
+            });
+            setTimeout(() => {
+              setShowRechargeModal(false);
+              setSelectedPack(null);
+            }, 1500);
+          },
+          onError: (error) => {
+            toast({
+              title: "Payment Failed",
+              description: error.message || "Failed to process payment. Please try again.",
+              variant: "destructive",
+            });
+          },
+        }
+      );
     }, 1500);
   };
 
