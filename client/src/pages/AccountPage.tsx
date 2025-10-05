@@ -42,6 +42,9 @@ import {
   Check,
   Edit,
   IdCard,
+  CreditCard,
+  Smartphone,
+  Building2,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -50,6 +53,7 @@ export default function AccountPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showRechargeModal, setShowRechargeModal] = useState(false);
+  const [selectedPack, setSelectedPack] = useState<typeof rechargePacks[0] | null>(null);
   const [dndEnabled, setDndEnabled] = useState(false);
   const [selectedLanguage, setSelectedLanguage] = useState("English");
   const [isEditing, setIsEditing] = useState(false);
@@ -105,9 +109,57 @@ export default function AccountPage() {
     window.location.href = "/";
   };
 
+  const paymentMethods = [
+    {
+      id: "upi",
+      name: "UPI App",
+      description: "Pay using any UPI app",
+      icon: Smartphone,
+      color: "text-green-600 dark:text-green-400",
+    },
+    {
+      id: "card",
+      name: "Card",
+      description: "Debit/Credit card payment",
+      icon: CreditCard,
+      color: "text-blue-600 dark:text-blue-400",
+    },
+    {
+      id: "netbanking",
+      name: "Net Banking",
+      description: "Pay via your bank account",
+      icon: Building2,
+      color: "text-purple-600 dark:text-purple-400",
+    },
+  ];
+
   const handleRecharge = (pack: typeof rechargePacks[0]) => {
+    setSelectedPack(pack);
+  };
+
+  const handleSelectPayment = (method: string) => {
+    if (!selectedPack) return;
+    
+    toast({
+      title: "Processing Payment",
+      description: `Redirecting to ${paymentMethods.find(m => m.id === method)?.name} for ₹${selectedPack.pay}...`,
+    });
+    
+    setTimeout(() => {
+      toast({
+        title: "Payment Successful!",
+        description: `₹${selectedPack.get} has been added to your wallet.`,
+      });
+      setTimeout(() => {
+        setShowRechargeModal(false);
+        setSelectedPack(null);
+      }, 1500);
+    }, 1500);
+  };
+
+  const handleCloseRechargeModal = () => {
     setShowRechargeModal(false);
-    setLocation("/user/recharge");
+    setSelectedPack(null);
   };
 
   const handleEditProfile = () => {
@@ -558,54 +610,111 @@ export default function AccountPage() {
       </main>
 
       {/* Recharge Modal */}
-      <Dialog open={showRechargeModal} onOpenChange={setShowRechargeModal}>
-        <DialogContent>
+      <Dialog open={showRechargeModal} onOpenChange={handleCloseRechargeModal}>
+        <DialogContent className="max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Select Recharge Pack</DialogTitle>
+            <DialogTitle>
+              {!selectedPack ? "Select Recharge Pack" : "Select Payment Method"}
+            </DialogTitle>
             <DialogDescription>
-              Choose a recharge pack to add balance to your wallet
+              {!selectedPack 
+                ? "Choose a recharge pack to add balance to your wallet"
+                : `Complete payment of ₹${selectedPack.pay} to get ₹${selectedPack.get}`
+              }
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-3">
-            {rechargePacks.map((pack) => (
-              <div
-                key={pack.pay}
-                className={`relative cursor-pointer rounded-xl p-1 bg-gradient-to-r ${pack.color} hover:scale-105 transition-transform duration-200`}
-                onClick={() => handleRecharge(pack)}
-                data-testid={`recharge-pack-${pack.pay}`}
-              >
-                <div className="bg-background rounded-lg p-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <span className="text-4xl">{pack.emoji}</span>
-                      <div>
-                        <div className="text-xs font-medium text-muted-foreground uppercase">
-                          {pack.label}
-                        </div>
-                        <div className="font-bold text-lg flex items-center gap-1">
-                          <IndianRupee className="w-4 h-4" />
-                          {pack.pay}
-                        </div>
-                        <div className="text-sm text-success font-medium">
-                          +₹{pack.bonus} bonus
+          
+          {!selectedPack ? (
+            <div className="space-y-3">
+              {rechargePacks.map((pack) => (
+                <div
+                  key={pack.pay}
+                  className={`relative cursor-pointer rounded-xl p-1 bg-gradient-to-r ${pack.color} hover:scale-105 transition-transform duration-200`}
+                  onClick={() => handleRecharge(pack)}
+                  data-testid={`recharge-pack-${pack.pay}`}
+                >
+                  <div className="bg-background rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="text-4xl">{pack.emoji}</span>
+                        <div>
+                          <div className="text-xs font-medium text-muted-foreground uppercase">
+                            {pack.label}
+                          </div>
+                          <div className="font-bold text-lg flex items-center gap-1">
+                            <IndianRupee className="w-4 h-4" />
+                            {pack.pay}
+                          </div>
+                          <div className="text-sm text-success font-medium">
+                            +₹{pack.bonus} bonus
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className="text-xs text-muted-foreground mb-1">You Get</div>
-                      <div className="text-2xl font-bold flex items-center gap-1 bg-gradient-to-r bg-clip-text text-transparent ${pack.color}">
-                        <IndianRupee className="w-6 h-6" />
-                        {pack.get}
-                      </div>
-                      <div className="text-xs font-semibold text-success">
-                        {Math.round((pack.bonus / pack.pay) * 100)}% extra
+                      <div className="text-right">
+                        <div className="text-xs text-muted-foreground mb-1">You Get</div>
+                        <div className="text-2xl font-bold flex items-center gap-1 bg-gradient-to-r bg-clip-text text-transparent ${pack.color}">
+                          <IndianRupee className="w-6 h-6" />
+                          {pack.get}
+                        </div>
+                        <div className="text-xs font-semibold text-success">
+                          {Math.round((pack.bonus / pack.pay) * 100)}% extra
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Card className="p-4 bg-gradient-to-br from-primary/10 to-primary/5">
+                <div className="text-center">
+                  <p className="text-sm text-muted-foreground mb-2">Recharge Amount</p>
+                  <div className="text-3xl font-bold text-primary flex items-center justify-center gap-1">
+                    <IndianRupee className="w-7 h-7" />
+                    {selectedPack.pay}
+                  </div>
+                  <div className="text-sm text-success font-medium mt-1">
+                    You'll get ₹{selectedPack.get} (includes ₹{selectedPack.bonus} bonus)
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-2"
+                    onClick={() => setSelectedPack(null)}
+                    data-testid="button-change-pack"
+                  >
+                    Change Pack
+                  </Button>
+                </div>
+              </Card>
+
+              <div className="space-y-3">
+                {paymentMethods.map((method) => (
+                  <Card
+                    key={method.id}
+                    className="p-4 cursor-pointer hover-elevate active-elevate-2 transition-all"
+                    onClick={() => handleSelectPayment(method.id)}
+                    data-testid={`card-payment-${method.id}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className={`p-3 rounded-lg bg-muted ${method.color}`}>
+                        <method.icon className="w-6 h-6" />
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="font-semibold" data-testid={`text-payment-name-${method.id}`}>
+                          {method.name}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {method.description}
+                        </p>
+                      </div>
+                    </div>
+                  </Card>
+                ))}
               </div>
-            ))}
-          </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
