@@ -1,43 +1,18 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { PaymentGatewayModal } from "@/components/PaymentGatewayModal";
+import { RandomMatchButton } from "@/components/RandomMatchButton";
 import { ChevronLeft, Wallet, CreditCard } from "lucide-react";
 import { useLocation } from "wouter";
-import { useToast } from "@/hooks/use-toast";
 
 export default function RechargePage() {
   const [, setLocation] = useLocation();
   const [currentBalance] = useState(120);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [selectedAmount, setSelectedAmount] = useState(0);
-  const { toast } = useToast();
 
   const handleSelectAmount = (amount: number) => {
-    setSelectedAmount(amount);
-    setShowPaymentModal(true);
-  };
-
-  const handleSelectGateway = (gateway: string) => {
-    setShowPaymentModal(false);
-    toast({
-      title: "Processing Payment",
-      description: `Redirecting to ${gateway.toUpperCase()} payment gateway for ₹${selectedAmount}...`,
-    });
-    // In real app, redirect to payment gateway
-    setTimeout(() => {
-      toast({
-        title: "Payment Successful!",
-        description: `₹${selectedAmount} has been added to your wallet.`,
-      });
-      // Delay redirect to ensure toast is visible
-      setTimeout(() => {
-        setLocation("/user/account");
-      }, 1500);
-    }, 1500);
+    setLocation(`/user/payment/${amount}`);
   };
 
   const quickAmounts = [100, 200, 500, 1000, 2000, 5000];
@@ -88,20 +63,9 @@ export default function RechargePage() {
             ))}
           </div>
         </div>
-
-        <Card className="p-4 bg-warning/10 border-warning/20">
-          <p className="text-sm">
-            <strong>Note:</strong> You need minimum ₹135 (3 minutes at ₹45/min) to initiate a call.
-          </p>
-        </Card>
       </main>
 
-      <PaymentGatewayModal
-        isOpen={showPaymentModal}
-        amount={selectedAmount}
-        onClose={() => setShowPaymentModal(false)}
-        onSelectGateway={handleSelectGateway}
-      />
+      <RandomMatchButton />
     </div>
   );
 }

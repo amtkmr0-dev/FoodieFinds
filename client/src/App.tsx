@@ -18,6 +18,7 @@ import CreatorOnboarding from "@/pages/CreatorOnboarding";
 import PendingApproval from "@/pages/PendingApproval";
 import AdminLogin from "@/pages/AdminLogin";
 import RechargePage from "@/pages/RechargePage";
+import PaymentGatewayPage from "@/pages/PaymentGatewayPage";
 import SupportChatPage from "@/pages/SupportChatPage";
 import AdminBroadcast from "@/pages/AdminBroadcast";
 import AccountPage from "@/pages/AccountPage";
@@ -55,6 +56,7 @@ function Router() {
       <Route path="/user/account" component={AccountPage} />
       <Route path="/user/creator/:id" component={CreatorProfile} />
       <Route path="/user/recharge" component={RechargePage} />
+      <Route path="/user/payment/:amount" component={PaymentGatewayPage} />
       <Route path="/user/support" component={SupportChatPage} />
       <Route path="/user/call" component={() => (
         <CallInterface
