@@ -25,16 +25,73 @@ import AdminBroadcast from "@/pages/AdminBroadcast";
 import AccountPage from "@/pages/AccountPage";
 import { CallInterface } from "@/components/CallInterface";
 import NotFound from "@/pages/not-found";
-import { useLocation } from "wouter";
+import { useLocation, useParams } from "wouter";
+
+const creatorsData = [
+  {
+    id: "1",
+    name: "Sarah Johnson",
+    price: 45,
+    country: "India",
+    followers: 1250,
+    languages: ["English", "Hindi", "Tamil"],
+    isOnline: true,
+    randomMatchEnabled: true,
+  },
+  {
+    id: "2",
+    name: "Rahul Verma",
+    price: 38,
+    country: "India",
+    followers: 890,
+    languages: ["Hindi", "English"],
+    isOnline: false,
+    randomMatchEnabled: false,
+  },
+  {
+    id: "3",
+    name: "Priya Sharma",
+    price: 52,
+    country: "India",
+    followers: 2100,
+    languages: ["English", "Hindi", "Marathi"],
+    isOnline: true,
+    randomMatchEnabled: true,
+  },
+  {
+    id: "4",
+    name: "Amit Patel",
+    price: 40,
+    country: "India",
+    followers: 1500,
+    languages: ["Gujarati", "Hindi", "English"],
+    isOnline: true,
+    randomMatchEnabled: true,
+  },
+  {
+    id: "5",
+    name: "Neha Kapoor",
+    price: 48,
+    country: "India",
+    followers: 1780,
+    languages: ["English", "Hindi", "Punjabi"],
+    isOnline: true,
+    randomMatchEnabled: true,
+  },
+];
 
 function CallInterfaceWrapper() {
   const [, setLocation] = useLocation();
+  const params = useParams<{ id: string }>();
+  const creatorId = params.id || "1";
+  
+  const creator = creatorsData.find(c => c.id === creatorId) || creatorsData[0];
   
   return (
     <CallInterface
-      creatorName="Sarah Johnson"
-      creatorId="1"
-      pricePerMinute={45}
+      creatorName={creator.name}
+      creatorId={creator.id}
+      pricePerMinute={creator.price}
       onEndCall={() => setLocation("/user")}
     />
   );
@@ -73,7 +130,7 @@ function Router() {
       <Route path="/user/recharge" component={RechargePage} />
       <Route path="/user/payment/:amount" component={PaymentGatewayPage} />
       <Route path="/user/support" component={SupportChatPage} />
-      <Route path="/user/call" component={CallInterfaceWrapper} />
+      <Route path="/user/call/:id" component={CallInterfaceWrapper} />
       
       {/* Creator & Admin Routes */}
       <Route path="/creator" component={CreatorApp} />
