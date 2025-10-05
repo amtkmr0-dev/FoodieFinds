@@ -248,13 +248,13 @@ export default function UserApp() {
         </Tabs>
       </main>
 
-      {/* Floating Random Match Button - Always visible with pulsing animation */}
+      {/* Floating Random Match Button - Always visible in center, moves with scrolling */}
       <Button
         size="lg"
-        className={`fixed bottom-32 left-1/2 -translate-x-1/2 z-50 shadow-2xl transition-all duration-700 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
+        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 shadow-2xl transition-all duration-700 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
           showRandomMatch 
-            ? 'opacity-100 translate-y-0 animate-pulse-scale' 
-            : 'opacity-0 translate-y-16 pointer-events-none'
+            ? 'opacity-100 scale-100 animate-pulse-scale' 
+            : 'opacity-0 scale-90 pointer-events-none'
         }`}
         onClick={() => setShowIncomingCall(true)}
         data-testid="button-random-match"
