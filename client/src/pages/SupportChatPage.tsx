@@ -7,11 +7,11 @@ import { ChevronLeft } from "lucide-react";
 
 export default function SupportChatPage() {
   const [, setLocation] = useLocation();
-  const [hasHadFirstCall, setHasHadFirstCall] = useState(false);
+  const [hasHadFirstRecharge, setHasHadFirstRecharge] = useState(false);
   
   useEffect(() => {
-    const completedFirstCall = localStorage.getItem("talkin_first_call_completed");
-    setHasHadFirstCall(completedFirstCall === "true");
+    const completedFirstRecharge = localStorage.getItem("firstRechargeCompleted");
+    setHasHadFirstRecharge(completedFirstRecharge === "true");
   }, []);
   
   return (
@@ -32,7 +32,7 @@ export default function SupportChatPage() {
       </header>
       <div className="flex-1 overflow-hidden">
         <SupportChat 
-          hasHadFirstCall={hasHadFirstCall}
+          hasHadFirstCall={hasHadFirstRecharge}
           onClose={() => setLocation("/user")} 
         />
       </div>

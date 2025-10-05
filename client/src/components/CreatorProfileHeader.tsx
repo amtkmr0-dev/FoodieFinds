@@ -53,7 +53,16 @@ export function CreatorProfileHeader({
         </div>
 
         <div className="flex-1">
-          <h1 className="text-2xl font-bold mb-2">{name}</h1>
+          <div className="flex items-center gap-2 mb-2">
+            <h1 className="text-2xl font-bold">{name}</h1>
+            <Badge 
+              variant={isOnline ? "default" : "secondary"} 
+              className={isOnline ? "bg-status-online hover:bg-status-online" : ""}
+              data-testid="badge-status"
+            >
+              {isOnline ? "Online" : "Offline"}
+            </Badge>
+          </div>
           <div className="flex flex-wrap gap-2 mb-2">
             <Badge variant="secondary" className="gap-1">
               <Languages className="w-3 h-3" />
@@ -99,12 +108,18 @@ export function CreatorProfileHeader({
         <Button
           className="flex-1"
           onClick={onTalkNow}
+          disabled={!isOnline}
           data-testid="button-talk-now"
         >
           <Phone className="w-4 h-4 mr-2" />
-          Talk Now - ₹{price}/min
+          {isOnline ? `Talk Now - ₹${price}/min` : "Offline"}
         </Button>
       </div>
+      {!isOnline && (
+        <p className="text-xs text-center text-muted-foreground mt-3" data-testid="text-offline-notice">
+          This creator is offline. You can send them a message and they'll respond when online.
+        </p>
+      )}
     </div>
   );
 }

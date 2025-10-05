@@ -22,10 +22,10 @@ export function PrivacyWarningModal({ onAccept, onCancel }: PrivacyWarningModalP
             ⚠️ <strong>Important:</strong> For your safety and privacy, please note:
           </p>
           <ul className="text-sm space-y-2 ml-4 list-disc">
-            <li>Creators should NOT share personal details like phone numbers, addresses, or social media</li>
-            <li>Keep all conversations within the platform</li>
-            <li>Report any inappropriate behavior immediately</li>
-            <li>This call is charged at the displayed per-minute rate</li>
+            <li>Do not share personal information</li>
+            <li>Respect every creator you connect with</li>
+            <li>Do not engage in any illegal activity</li>
+            <li>Do not record calls and always respect privacy</li>
           </ul>
         </div>
 

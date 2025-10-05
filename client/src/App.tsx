@@ -25,6 +25,20 @@ import AdminBroadcast from "@/pages/AdminBroadcast";
 import AccountPage from "@/pages/AccountPage";
 import { CallInterface } from "@/components/CallInterface";
 import NotFound from "@/pages/not-found";
+import { useLocation } from "wouter";
+
+function CallInterfaceWrapper() {
+  const [, setLocation] = useLocation();
+  
+  return (
+    <CallInterface
+      creatorName="Sarah Johnson"
+      creatorId="1"
+      pricePerMinute={45}
+      onEndCall={() => setLocation("/user")}
+    />
+  );
+}
 
 function Router() {
   const [selectedApp, setSelectedApp] = useState<"user" | "creator" | "admin" | null>(null);
@@ -59,14 +73,7 @@ function Router() {
       <Route path="/user/recharge" component={RechargePage} />
       <Route path="/user/payment/:amount" component={PaymentGatewayPage} />
       <Route path="/user/support" component={SupportChatPage} />
-      <Route path="/user/call" component={() => (
-        <CallInterface
-          creatorName="Sarah Johnson"
-          creatorId="1"
-          pricePerMinute={45}
-          onEndCall={() => window.location.href = "/user"}
-        />
-      )} />
+      <Route path="/user/call" component={CallInterfaceWrapper} />
       
       {/* Creator & Admin Routes */}
       <Route path="/creator" component={CreatorApp} />

@@ -57,6 +57,9 @@ export default function RechargePage() {
         // Actually recharge the wallet
         await recharge(selectedAmount, method);
         
+        // Mark first recharge as completed to unlock support
+        localStorage.setItem("firstRechargeCompleted", "true");
+        
         toast({
           title: "Payment Successful!",
           description: `₹${selectedAmount} has been added to your wallet.`,

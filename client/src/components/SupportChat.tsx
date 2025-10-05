@@ -48,7 +48,7 @@ export function SupportChat({ onClose, hasHadFirstCall = false }: SupportChatPro
         <Card className="p-6 text-center max-w-md">
           <h3 className="font-semibold mb-2">Support Chat Unavailable</h3>
           <p className="text-sm text-muted-foreground">
-            Support chat is enabled after your first successful call. Complete a call to unlock this feature.
+            Support chat is enabled after your first successful recharge. Complete a recharge to unlock this feature.
           </p>
           {onClose && (
             <Button variant="outline" className="mt-4" onClick={onClose} data-testid="button-close-support">

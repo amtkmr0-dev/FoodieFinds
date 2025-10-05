@@ -58,6 +58,7 @@ export default function AccountPage() {
   const [selectedLanguage, setSelectedLanguage] = useState("English");
   const [isEditing, setIsEditing] = useState(false);
   const [copiedUserId, setCopiedUserId] = useState(false);
+  const [showBlockedCreators, setShowBlockedCreators] = useState(false);
 
   // Mock user data
   const [userProfile, setUserProfile] = useState({
@@ -146,6 +147,9 @@ export default function AccountPage() {
     });
     
     setTimeout(() => {
+      // Mark first recharge as completed
+      localStorage.setItem("firstRechargeCompleted", "true");
+      
       toast({
         title: "Payment Successful!",
         description: `₹${selectedPack.get} has been added to your wallet.`,
@@ -204,8 +208,8 @@ export default function AccountPage() {
     setTimeout(() => setCopiedUserId(false), 2000);
   };
 
-  // Check if support is enabled (user has completed first call)
-  const supportEnabled = localStorage.getItem("firstCallCompleted") === "true";
+  // Check if support is enabled (user has completed first recharge)
+  const supportEnabled = localStorage.getItem("firstRechargeCompleted") === "true";
 
   const legalLinks = [
     { title: "Terms and Conditions", onClick: () => window.open("/legal/terms", "_blank") },
@@ -447,46 +451,24 @@ export default function AccountPage() {
           </CardContent>
         </Card>
 
-        {/* Blocked Creators */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <UserX className="w-5 h-5" />
-              Blocked Creators
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {blockedCreators.map((creator) => (
-                <div
-                  key={creator.id}
-                  className="flex items-center justify-between"
-                  data-testid={`blocked-creator-${creator.id}`}
-                >
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-10 h-10">
-                      <AvatarImage src={creator.profilePicture} />
-                      <AvatarFallback>
-                        {creator.name.slice(0, 2).toUpperCase()}
-                      </AvatarFallback>
-                    </Avatar>
-                    <span className="font-medium">{creator.name}</span>
+        {/* Blocked Creators - Click to View */}
+        <Card 
+          className="cursor-pointer hover-elevate active-elevate-2" 
+          onClick={() => setShowBlockedCreators(true)}
+          data-testid="card-blocked-creators"
+        >
+          <CardContent className="pt-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <UserX className="w-5 h-5" />
+                <div>
+                  <div className="font-medium">Blocked Creators</div>
+                  <div className="text-xs text-muted-foreground">
+                    {blockedCreators.length} blocked
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleUnblock(creator.id)}
-                    data-testid={`button-unblock-${creator.id}`}
-                  >
-                    Unblock
-                  </Button>
                 </div>
-              ))}
-              {blockedCreators.length === 0 && (
-                <p className="text-sm text-muted-foreground text-center py-4">
-                  No blocked creators
-                </p>
-              )}
+              </div>
+              <ChevronRight className="w-5 h-5 text-muted-foreground" />
             </div>
           </CardContent>
         </Card>
@@ -504,11 +486,11 @@ export default function AccountPage() {
               <MessageSquare className="w-5 h-5 mr-2" />
               {supportEnabled
                 ? "Contact Support"
-                : "Complete your first call to unlock support"}
+                : "Complete your first recharge to unlock support"}
             </Button>
             {!supportEnabled && (
               <p className="text-xs text-muted-foreground text-center mt-2">
-                Support chat is available after your first successful call
+                Support chat is available after your first successful recharge
               </p>
             )}
           </CardContent>
@@ -608,6 +590,53 @@ export default function AccountPage() {
           </CardContent>
         </Card>
       </main>
+
+      {/* Blocked Creators Modal */}
+      <Dialog open={showBlockedCreators} onOpenChange={setShowBlockedCreators}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserX className="w-5 h-5" />
+              Blocked Creators
+            </DialogTitle>
+            <DialogDescription>
+              Creators you have blocked will not be able to contact you
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 mt-4">
+            {blockedCreators.map((creator) => (
+              <div
+                key={creator.id}
+                className="flex items-center justify-between"
+                data-testid={`blocked-creator-${creator.id}`}
+              >
+                <div className="flex items-center gap-3">
+                  <Avatar className="w-10 h-10">
+                    <AvatarImage src={creator.profilePicture} />
+                    <AvatarFallback>
+                      {creator.name.slice(0, 2).toUpperCase()}
+                    </AvatarFallback>
+                  </Avatar>
+                  <span className="font-medium">{creator.name}</span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleUnblock(creator.id)}
+                  data-testid={`button-unblock-${creator.id}`}
+                >
+                  Unblock
+                </Button>
+              </div>
+            ))}
+            {blockedCreators.length === 0 && (
+              <p className="text-sm text-muted-foreground text-center py-8">
+                No blocked creators
+              </p>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {/* Recharge Modal */}
       <Dialog open={showRechargeModal} onOpenChange={handleCloseRechargeModal}>
