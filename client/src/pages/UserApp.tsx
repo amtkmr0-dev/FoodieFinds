@@ -252,45 +252,50 @@ export default function UserApp() {
         </Tabs>
       </main>
 
-      {/* Random Match Button - Fixed overlay, always visible on screen */}
-      <Button
-        size="lg"
-        className={`fixed left-1/2 -translate-x-1/2 shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
-          showRandomMatch 
-            ? 'bottom-20 opacity-100 scale-100' 
-            : '-bottom-20 opacity-0 scale-90 pointer-events-none'
-        }`}
-        style={{ zIndex: 9999 }}
-        onClick={() => setShowIncomingCall(true)}
-        data-testid="button-random-match"
-      >
-        <Shuffle className="w-5 h-5 mr-2" />
-        Random Match
-      </Button>
-
-      <nav className="fixed bottom-0 left-0 right-0 bg-card border-t px-4 py-3">
-        <div className="flex justify-around max-w-md mx-auto">
-          <Button variant="ghost" size="icon" data-testid="button-nav-home">
-            <Home className="w-5 h-5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setLocation("/user/support")}
-            data-testid="button-nav-messages"
+      {/* Bottom Navigation with Random Match Button */}
+      <div className="fixed bottom-0 left-0 right-0" style={{ zIndex: 9999 }}>
+        {/* Random Match Button - Above nav bar */}
+        <div className="flex justify-center pb-3">
+          <Button
+            size="lg"
+            className={`shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
+              showRandomMatch 
+                ? 'opacity-100 scale-100' 
+                : 'opacity-0 scale-90 pointer-events-none'
+            }`}
+            onClick={() => setShowIncomingCall(true)}
+            data-testid="button-random-match"
           >
-            <MessageSquare className="w-5 h-5" />
-          </Button>
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            onClick={() => setLocation("/user/account")}
-            data-testid="button-nav-profile"
-          >
-            <User className="w-5 h-5" />
+            <Shuffle className="w-5 h-5 mr-2" />
+            Random Match
           </Button>
         </div>
-      </nav>
+
+        {/* Navigation Bar */}
+        <nav className="bg-card border-t px-4 py-3">
+          <div className="flex justify-around max-w-md mx-auto">
+            <Button variant="ghost" size="icon" data-testid="button-nav-home">
+              <Home className="w-5 h-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/user/support")}
+              data-testid="button-nav-messages"
+            >
+              <MessageSquare className="w-5 h-5" />
+            </Button>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setLocation("/user/account")}
+              data-testid="button-nav-profile"
+            >
+              <User className="w-5 h-5" />
+            </Button>
+          </div>
+        </nav>
+      </div>
 
       {showIncomingCall && (
         <IncomingCallModal
