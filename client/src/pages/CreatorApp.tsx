@@ -251,32 +251,32 @@ export default function CreatorApp() {
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <TabsList className="grid w-full grid-cols-7">
             <TabsTrigger value="dashboard" data-testid="tab-dashboard">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Dashboard
+              <BarChart3 className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">Dashboard</span>
             </TabsTrigger>
             <TabsTrigger value="live" data-testid="tab-live">
-              <Radio className="w-4 h-4 mr-2" />
-              Go Live
+              <Radio className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">Go Live</span>
             </TabsTrigger>
             <TabsTrigger value="pk-battles" data-testid="tab-pk-battles">
-              <Trophy className="w-4 h-4 mr-2" />
-              PK Battles
+              <Trophy className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">PK Battles</span>
             </TabsTrigger>
             <TabsTrigger value="leaderboard" data-testid="tab-leaderboard">
-              <Award className="w-4 h-4 mr-2" />
-              Rankings
+              <Award className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">Rankings</span>
             </TabsTrigger>
             <TabsTrigger value="gifts" data-testid="tab-gifts">
-              <Gift className="w-4 h-4 mr-2" />
-              Gifts
+              <Gift className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">Gifts</span>
             </TabsTrigger>
             <TabsTrigger value="earnings" data-testid="tab-earnings">
-              <Wallet className="w-4 h-4 mr-2" />
-              Earnings
+              <Wallet className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">Earnings</span>
             </TabsTrigger>
             <TabsTrigger value="settings" data-testid="tab-settings">
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
+              <Settings className="w-4 h-4 md:mr-2" />
+              <span className="sr-only md:not-sr-only">Settings</span>
             </TabsTrigger>
           </TabsList>
 
