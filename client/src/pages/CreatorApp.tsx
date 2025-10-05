@@ -52,6 +52,7 @@ import {
   Shield,
   CreditCard,
   FileText,
+  Shuffle,
 } from "lucide-react";
 
 export default function CreatorApp() {
@@ -78,6 +79,9 @@ export default function CreatorApp() {
 
   // Withdrawal state
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
+
+  // Random call setting
+  const [randomCallEnabled, setRandomCallEnabled] = useState(true);
 
   // Mock data
   const creatorStats = {
@@ -1164,6 +1168,40 @@ export default function CreatorApp() {
                   </div>
                   <Button data-testid="button-save-language">Save Language</Button>
                 </div>
+              </CardContent>
+            </Card>
+
+            {/* Random Call Settings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shuffle className="w-5 h-5 text-primary" />
+                  Random Call Settings
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <p className="font-medium">Enable Random Call</p>
+                    <p className="text-sm text-muted-foreground">
+                      Allow users to connect with you through random call feature
+                    </p>
+                  </div>
+                  <Switch
+                    checked={randomCallEnabled}
+                    onCheckedChange={setRandomCallEnabled}
+                    data-testid="switch-random-call"
+                  />
+                </div>
+                {randomCallEnabled && (
+                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                    <p className="text-sm">
+                      <strong>Note:</strong> When enabled, users will see a pulsing Random Call button 
+                      that allows them to instantly connect with you. This helps increase your visibility 
+                      and earnings.
+                    </p>
+                  </div>
+                )}
               </CardContent>
             </Card>
 

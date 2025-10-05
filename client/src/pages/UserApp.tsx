@@ -248,12 +248,12 @@ export default function UserApp() {
         </Tabs>
       </main>
 
-      {/* Floating Random Match Button - Slow popup with smooth animations */}
+      {/* Floating Random Match Button - Hovering on footer with pulsing animation */}
       <Button
         size="lg"
         className={`fixed bottom-28 left-1/2 -translate-x-1/2 z-50 shadow-2xl transition-all duration-700 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
           showRandomMatch 
-            ? 'opacity-100 translate-y-0' 
+            ? 'opacity-100 translate-y-0 animate-pulse-scale' 
             : 'opacity-0 translate-y-16 pointer-events-none'
         }`}
         onClick={() => setShowIncomingCall(true)}
