@@ -110,3 +110,78 @@ export const insertAgencyCommissionSchema = createInsertSchema(agencyCommission)
 
 export type InsertAgencyCommission = z.infer<typeof insertAgencyCommissionSchema>;
 export type AgencyCommission = typeof agencyCommission.$inferSelect;
+
+// User Wallets table
+export const userWallets = pgTable("user_wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull().unique(), // User identifier (phone number or user ID)
+  balance: decimal("balance", { precision: 10, scale: 2 }).notNull().default("0.00"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertUserWalletSchema = createInsertSchema(userWallets).omit({
+  id: true,
+  updatedAt: true,
+});
+
+export type InsertUserWallet = z.infer<typeof insertUserWalletSchema>;
+export type UserWallet = typeof userWallets.$inferSelect;
+
+// Gifts Configuration table
+export const giftsConfig = pgTable("gifts_config", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  amount: integer("amount").notNull(), // Gift amount in INR
+  name: text("name").notNull(), // Gift name (e.g., "Rose", "Diamond")
+  imageUrl: text("image_url").notNull(), // URL or path to gift image/icon
+  iconType: text("icon_type"), // Icon identifier if using icon library
+  isActive: text("is_active").notNull().default("true"), // "true" | "false"
+  sortOrder: integer("sort_order").notNull().default(0), // Display order
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+  updatedBy: varchar("updated_by"), // References admin_users.id
+});
+
+export const insertGiftConfigSchema = createInsertSchema(giftsConfig).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertGiftConfig = z.infer<typeof insertGiftConfigSchema>;
+export type GiftConfig = typeof giftsConfig.$inferSelect;
+
+// Gift Transactions table
+export const giftTransactions = pgTable("gift_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  senderId: text("sender_id").notNull(), // User who sent the gift
+  recipientId: text("recipient_id").notNull(), // Creator who received the gift
+  giftId: varchar("gift_id").notNull(), // References giftsConfig.id
+  amount: integer("amount").notNull(), // Amount in INR
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertGiftTransactionSchema = createInsertSchema(giftTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertGiftTransaction = z.infer<typeof insertGiftTransactionSchema>;
+export type GiftTransaction = typeof giftTransactions.$inferSelect;
+
+// Recharge Transactions table
+export const rechargeTransactions = pgTable("recharge_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(), // User who recharged
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(), // Recharge amount
+  paymentMethod: text("payment_method").notNull(), // upi, card, netbanking
+  status: text("status").notNull().default("pending"), // pending, success, failed
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertRechargeTransactionSchema = createInsertSchema(rechargeTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertRechargeTransaction = z.infer<typeof insertRechargeTransactionSchema>;
+export type RechargeTransaction = typeof rechargeTransactions.$inferSelect;
