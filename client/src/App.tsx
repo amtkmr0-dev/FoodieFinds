@@ -66,7 +66,7 @@ const creatorsData = [
     followers: 1500,
     languages: ["Gujarati", "Hindi", "English"],
     isOnline: true,
-    randomMatchEnabled: true,
+    randomMatchEnabled: false,
   },
   {
     id: "5",
@@ -78,14 +78,59 @@ const creatorsData = [
     isOnline: true,
     randomMatchEnabled: true,
   },
+  {
+    id: "6",
+    name: "Vikram Singh",
+    price: 35,
+    country: "India",
+    followers: 750,
+    languages: ["Hindi", "English"],
+    isOnline: false,
+    randomMatchEnabled: false,
+  },
+  {
+    id: "7",
+    name: "Anjali Mehta",
+    price: 42,
+    country: "India",
+    followers: 1320,
+    languages: ["English", "Hindi", "Bengali"],
+    isOnline: true,
+    randomMatchEnabled: true,
+  },
+  {
+    id: "8",
+    name: "Karan Malhotra",
+    price: 50,
+    country: "India",
+    followers: 1950,
+    languages: ["Hindi", "English", "Urdu"],
+    isOnline: true,
+    randomMatchEnabled: false,
+  },
+  {
+    id: "9",
+    name: "Kavya Iyer",
+    price: 46,
+    country: "India",
+    followers: 1650,
+    languages: ["English", "Tamil", "Hindi"],
+    isOnline: false,
+    randomMatchEnabled: false,
+  },
 ];
 
 function CallInterfaceWrapper() {
   const [, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
-  const creatorId = params.id || "1";
+  const creatorId = params.id;
   
-  const creator = creatorsData.find(c => c.id === creatorId) || creatorsData[0];
+  const creator = creatorsData.find(c => c.id === creatorId);
+  
+  if (!creator) {
+    setLocation("/user");
+    return null;
+  }
   
   return (
     <CallInterface
