@@ -4,16 +4,14 @@ import { Button } from "@/components/ui/button";
 import { CreatorCard } from "@/components/CreatorCard";
 import { BalanceDisplay } from "@/components/BalanceDisplay";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { IncomingCallModal } from "@/components/IncomingCallModal";
-import { Home, Heart, Shuffle, MessageSquare, User } from "lucide-react";
+import { RandomMatchButton } from "@/components/RandomMatchButton";
+import { Home, Heart, MessageSquare, User } from "lucide-react";
 import { useLocation } from "wouter";
 
 export default function UserApp() {
   const [, setLocation] = useLocation();
   const [balance] = useState(450);
-  const [showIncomingCall, setShowIncomingCall] = useState(false);
   const [activeTab, setActiveTab] = useState("explore");
-  const [showRandomMatch, setShowRandomMatch] = useState(false);
   const [followedCreators, setFollowedCreators] = useState<string[]>(() => {
     const saved = localStorage.getItem("followedCreators");
     return saved ? JSON.parse(saved) : [];
@@ -163,14 +161,6 @@ export default function UserApp() {
     }
   }, [activeTab]);
 
-  // Slow popup animation for Random Match button - appears after 1 second
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setShowRandomMatch(true);
-    }, 1000);
-    return () => clearTimeout(timer);
-  }, []);
-
   return (
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
@@ -248,20 +238,7 @@ export default function UserApp() {
         </Tabs>
       </main>
 
-      {/* Floating Random Match Button - Always visible in center, moves with scrolling */}
-      <Button
-        size="lg"
-        className={`fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 shadow-2xl transition-all duration-700 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
-          showRandomMatch 
-            ? 'opacity-100 scale-100 animate-pulse-scale' 
-            : 'opacity-0 scale-90 pointer-events-none'
-        }`}
-        onClick={() => setShowIncomingCall(true)}
-        data-testid="button-random-match"
-      >
-        <Shuffle className="w-5 h-5 mr-2" />
-        Random Match
-      </Button>
+      <RandomMatchButton />
 
       <nav className="fixed bottom-0 left-0 right-0 bg-card border-t px-4 py-3">
         <div className="flex justify-around max-w-md mx-auto">
@@ -286,18 +263,6 @@ export default function UserApp() {
           </Button>
         </div>
       </nav>
-
-      {showIncomingCall && (
-        <IncomingCallModal
-          callerName="System Call"
-          pricePerMinute={45}
-          onAccept={() => {
-            setShowIncomingCall(false);
-            setLocation("/user/recharge");
-          }}
-          onReject={() => setShowIncomingCall(false)}
-        />
-      )}
     </div>
   );
 }

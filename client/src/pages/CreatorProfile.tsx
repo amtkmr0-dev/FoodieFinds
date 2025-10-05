@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { CreatorProfileHeader } from "@/components/CreatorProfileHeader";
 import { PrivacyWarningModal } from "@/components/PrivacyWarningModal";
+import { RandomMatchButton } from "@/components/RandomMatchButton";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -353,6 +354,8 @@ export default function CreatorProfile() {
           </DialogContent>
         </Dialog>
       )}
+
+      <RandomMatchButton />
     </div>
   );
 }

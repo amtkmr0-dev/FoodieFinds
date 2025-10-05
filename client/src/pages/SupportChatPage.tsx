@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { SupportChat } from "@/components/SupportChat";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { RandomMatchButton } from "@/components/RandomMatchButton";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
@@ -36,6 +37,8 @@ export default function SupportChatPage() {
           onClose={() => setLocation("/user")} 
         />
       </div>
+
+      <RandomMatchButton />
     </div>
   );
 }
