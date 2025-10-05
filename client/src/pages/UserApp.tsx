@@ -176,7 +176,7 @@ export default function UserApp() {
     <div className="min-h-screen bg-background pb-20">
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-xl font-bold">Talkin</h1>
+          <h1 className="text-xl font-bold">LINKY</h1>
           <div className="flex items-center gap-3">
             <BalanceDisplay 
               balance={balance} 

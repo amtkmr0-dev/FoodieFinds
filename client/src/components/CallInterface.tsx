@@ -51,7 +51,7 @@ export function CallInterface({
     .slice(0, 2);
 
   const handleEndCall = () => {
-    localStorage.setItem("talkin_first_call_completed", "true");
+    localStorage.setItem("linky_first_call_completed", "true");
     onEndCall?.();
   };
 

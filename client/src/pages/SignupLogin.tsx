@@ -19,8 +19,8 @@ export default function SignupLogin() {
   const [deviceRecognized, setDeviceRecognized] = useState(false);
 
   useEffect(() => {
-    const deviceId = localStorage.getItem("talkin_device_id");
-    const savedUsername = localStorage.getItem("talkin_username");
+    const deviceId = localStorage.getItem("linky_device_id");
+    const savedUsername = localStorage.getItem("linky_username");
     
     if (deviceId && savedUsername) {
       setDeviceRecognized(true);
@@ -47,9 +47,9 @@ export default function SignupLogin() {
     setGeneratedUsername(username);
     
     const deviceId = crypto.randomUUID();
-    localStorage.setItem("talkin_device_id", deviceId);
-    localStorage.setItem("talkin_username", username);
-    localStorage.setItem("talkin_phone", phone);
+    localStorage.setItem("linky_device_id", deviceId);
+    localStorage.setItem("linky_username", username);
+    localStorage.setItem("linky_phone", phone);
     
     setFlowState("success");
     
@@ -110,9 +110,9 @@ export default function SignupLogin() {
             variant="outline"
             className="w-full"
             onClick={() => {
-              localStorage.removeItem("talkin_device_id");
-              localStorage.removeItem("talkin_username");
-              localStorage.removeItem("talkin_phone");
+              localStorage.removeItem("linky_device_id");
+              localStorage.removeItem("linky_username");
+              localStorage.removeItem("linky_phone");
               setDeviceRecognized(false);
               setFlowState("phone-entry");
             }}
@@ -134,8 +134,8 @@ export default function SignupLogin() {
 
         <Card className="w-full max-w-md p-8">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2">Talkin</h1>
-            <p className="text-muted-foreground">Enter your mobile number to get started</p>
+            <h1 className="text-3xl font-bold mb-2">LINKY</h1>
+            <p className="text-muted-foreground">Real Voices, Real Connections</p>
           </div>
 
           <div className="space-y-4 mb-6">
@@ -258,7 +258,7 @@ export default function SignupLogin() {
             <div className="w-20 h-20 bg-green-500/10 rounded-full flex items-center justify-center mx-auto mb-4">
               <CheckCircle2 className="w-12 h-12 text-green-500" />
             </div>
-            <h1 className="text-2xl font-bold mb-2">Welcome to Talkin!</h1>
+            <h1 className="text-2xl font-bold mb-2">Welcome to LINKY!</h1>
             <p className="text-muted-foreground mb-6">Your account has been created</p>
 
             <div className="bg-secondary rounded-lg p-4 mb-6">

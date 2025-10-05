@@ -231,7 +231,7 @@ export default function CreatorApp() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <div className="flex items-center gap-3">
             <h1 className="text-xl font-bold">
-              Talkin {role === "creator" ? "Creator" : "Agency"}
+              LINKY {role === "creator" ? "Creator" : "Agency"}
             </h1>
             <Badge variant={isLive ? "default" : "secondary"} className={isLive ? "bg-red-500 animate-pulse" : ""}>
               {isLive ? "🔴 LIVE" : role === "creator" ? "Creator" : "Agency"}

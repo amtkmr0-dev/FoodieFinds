@@ -168,7 +168,7 @@ export default function CreatorLogin() {
 
             <div className="space-y-3">
               <p className="text-sm text-muted-foreground text-center">
-                New to Talkin? You'll be guided through registration
+                New to LINKY? You'll be guided through registration
               </p>
 
               <div className="flex flex-wrap gap-2 justify-center text-xs text-muted-foreground">
