@@ -42,6 +42,9 @@ export const creatorAgentProfiles = pgTable("creator_agent_profiles", {
   // Language
   language: text("language").default("en"),
   
+  // Random Match Settings
+  randomMatchEnabled: text("random_match_enabled").notNull().default("false"), // "true" | "false"
+  
   // Timestamps
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
