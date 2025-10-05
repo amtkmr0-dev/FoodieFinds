@@ -1,0 +1,175 @@
+Profile Online/Offline Status:
+
+When any profile is clicked from the homepage, display clear status: “Online” or “Offline”.
+
+Users cannot initiate calls to offline profiles, but can send them messages.
+
+Profile Picture Selection by Admin:
+
+Out of the multiple pictures uploaded by creators, allow admin to select one as the main profile picture.
+
+The chosen profile image should be displayed on the homepage/creator cards in the user app as users scroll profiles.
+
+Privacy Notice Before Calls:
+
+On clicking "Talk Now", show a privacy notice popup (from the user's perspective) with text:
+
+"Do not share personal information."
+
+"Respect every creator you connect with."
+
+"Do not engage in illegal activity."
+
+"Do not record calls; respect privacy."
+
+Ensure wording is safe, clear, and friendly.
+
+End Call Button Flow:
+
+Fix the bug: On clicking "End Call", bring the user back to the homepage where profiles are listed (not exit the app).
+
+Account Section Updates:
+
+(6a) Current wallet balance should be clearly visible, prominent, and readable.
+
+(6b) On clicking "Recharge Wallet" in the account section, after selecting and successfully recharging, wallet balance must update instantly.
+
+Blocked Creators list should not be openly visible: show blocked creators only after user clicks the "Blocked Creator" section—list appears as a subpage/modal, not by default.
+
+Support chat unlock notice ("Complete your first call to unlock support...") should disappear after the user's first successful recharge.
+
+Summary:
+Show online/offline status, admin-selected profile image, privacy notice before calls, fix call-end navigation, ensure correct wallet balance updates & blocked creator list visibility, and update support chat unlock message logic.Replit AI Prompt – User App Functional & UX Changes
+
+Apply these user-side changes:
+
+Profile Online/Offline Status
+
+When a user clicks any profile from homepage (Explore/New/Follow tabs), clearly display whether the profile is Online or Offline.
+
+Calls should be disabled for offline profiles, but allow users to send messages to them.
+
+Admin-Selected Profile Picture for Creators
+
+Creators can upload multiple pictures; admin can choose one picture as the official profile image.
+
+Display this admin-selected profile picture on creator profile cards on the homepage as users scroll through profiles.
+
+Privacy Notice Popup Before Calls
+
+After clicking “Talk Now”, always show a privacy notice popup from the user’s point of view:
+
+Do not share personal information.
+
+Respect every creator you connect with.
+
+Do not engage in any illegal activity.
+
+Do not record the calls and always respect privacy.
+
+Make the wording friendly and clear.
+
+End Call Navigation
+
+Fix “End Call” so the user is returned to the homepage listing profiles (not kicked out of the app).
+
+Account Section Updates
+
+(6a) Current wallet balance must be clearly visible and prominent.
+
+(6b) If user clicks Recharge Wallet and completes a top-up, new balance should be instantly added and displayed.
+
+Blocked Creators: Do NOT show the blocked list openly; only reveal it when the user clicks “Blocked Creators” (as a subpage or modal).
+
+The message “Complete your first call to unlock support” should vanish immediately after at least one successful recharge.
+
+Implement all fixes so UI flow, wallet logic, and privacy controls are correct.Combined Replit AI Prompt – User App Feature Fixes and UX Enhancements
+
+Make the following changes on the User App:
+
+1. Profile Status and Access:
+
+Display clear “Online” or “Offline” status when a user clicks any profile from the homepage.
+
+Disable calling for offline profiles but allow sending messages.
+
+2. Profile Picture Administration:
+
+From multiple creator pictures, let admin select one as the official profile photo.
+
+Show this chosen photo as the profile image on homepage creator cards while users scroll through profiles.
+
+3. Privacy Notice Before Call:
+
+On clicking “Talk Now,” show a privacy popup worded for the user:
+
+No personal info sharing.
+
+Respect every creator you connect with.
+
+Do not involve in any illegal activity.
+
+Do not record calls, respect privacy.
+
+Write this clearly, politely, and professionally.
+
+4. End Call Flow:
+
+On “End Call,” bring the user back to the homepage listing profiles—not out of the app.
+
+5. Account Section:
+
+6(a) Display wallet balance more prominently and clearly.
+
+6(b) On recharge from account section, after success, update wallet balance immediately.
+
+Hide the blocked creators list by default; only show when “Blocked Creators” is clicked (subpage/modal).
+
+After the first successful recharge, remove the support-chat unlock notice (“Complete your first call to unlock support…”).
+
+Summary:
+Show online/offline status, admin-selected profile photo, user-focused privacy popup, correct back-to-home navigation on call end, instant wallet updates, blocked creators modal, and proper support unlock behaviour after recharge.Replit AI Combined Prompt – User App Functional & UX Enhancements
+
+Make these updates:
+
+Profile Status & Messaging:
+
+On clicking any profile from the homepage, clearly display Online/Offline status.
+
+Block calls to offline profiles, but allow messaging.
+
+Admin-Selected Profile Photo:
+
+From pictures uploaded by the creator, admin can select one as the official profile picture.
+
+Display admin’s chosen profile photo on the homepage creator cards as users scroll profiles.
+
+Privacy Notice (Call Flow):
+
+After clicking "Talk Now," show popup with these user-pointed instructions:
+
+Do not share personal info.
+
+Respect every creator you connect.
+
+Do not engage in illegal activity.
+
+Do not record calls; respect privacy.
+
+Wording should be clear, concise, and user-friendly.
+
+End Call Navigation:
+
+Clicking "End Call" should return the user to the homepage profiles list—not exit the app.
+
+Account Section Upgrades:
+
+(a) Wallet balance visible, clear, and prominent.
+
+(b) Recharge wallet: balance updates instantly and accurately after successful payment.
+
+Blocked Creators list only shown when "Blocked Creators" is clicked (subpage/modal), not openly visible.
+
+After the first recharge, remove "Complete your first call to unlock support..." message.
+
+Apply these for improved clarity, UX, and app reliability.
