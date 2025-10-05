@@ -1,0 +1,179 @@
+Please implement the following changes in the User App:
+
+1. Random Match Button (Homepage Only):
+
+Display the "Random Match" button only on the homepage’s main tabs—Explore, New, and Follow.
+
+The button must be fixed at the bottom center (mid-footer) of the viewport:
+
+Use overlay positioning—always visible, even when scrolling.
+
+Keep it above all other content and bottom navigation/tab bars (set high z-index).
+
+Render the button through the homepage layout only—do NOT show on other app pages.
+
+Add a smooth "pop-in/out" effect (slide or fade) so the button appears/disappears dynamically when switching tabs or entering homepage.
+
+Example CSS:
+
+css
+.random-match-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+2. Recharge Wallet Payment Flow (All Pages):
+
+On the Recharge Wallet page, display all available recharge/top-up packs.
+
+Immediately after a user clicks and selects a recharge pack, show payment method options (UPI App, Card, Net Banking) on the next screen.
+
+Do NOT open another page to re-select or confirm the plan; selecting a pack should directly show payment choices.
+
+Remove any unnecessary notes or info sections from the payment screen—keep it clean and focused on payment options for a fast, simple workflow.
+
+Summary:
+Combine these changes so the "Random Match" button is permanently at the center bottom of the homepage and the recharge flow is direct, fast, and user-friendly: one-pack-select → payment choice (no repeats or extra screens).Combined Replit AI Prompt – Homepage "Random Match" Button & Recharge Flow:
+
+Implement both UI changes as follows:
+
+Random Match Button (Homepage Only):
+
+Display the "Random Match" button only on the homepage tabs—Explore, New, and Follow.
+
+Button must have a fixed overlay position at the bottom center (mid-footer)—always visible over all homepage content and navigation, regardless of scrolling.
+
+Render the button via the homepage's main layout only (never on other pages).
+
+Add a smooth pop-in/out effect (e.g., fade or slide) when switching tabs or loading homepage.
+
+Example CSS:
+
+css
+.random-match-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+Recharge Wallet Payment Flow:
+
+On the Recharge Wallet page, show all recharge/top-up packs up front.
+
+When a user selects a pack, immediately display payment options (UPI App, Card, Net Banking)—do not show a repeated plan selection step.
+
+Remove the note/informational section from the payment screen; keep it clean and focused on payment selection.
+
+Ensure both:
+
+"Random Match" button is always fixed, visible, and dynamic only on homepage tabs.
+
+Recharge flow is streamlined to one-click plan select, then immediate payment options.Replit AI Prompt – Combined User App Changes (Homepage Button & Recharge Flow):
+
+Homepage "Random Match" Button:
+
+The "Random Match" button must always be rendered at the bottom center (mid-footer) on the homepage tabs: Explore, New, and Follow.
+
+The button’s overlay position should be fixed—visible at all times irrespective of scrolling.
+
+It should never show on any other pages outside the homepage.
+
+Add a smooth pop-in/out effect (e.g., gentle slide or fade) on tab switch or initial load.
+
+Example CSS:
+
+css
+.random-match-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+Recharge Wallet Page Flow:
+
+Display all recharge/top-up packs on the recharge wallet page.
+
+When a user selects a pack, directly show payment options (UPI App, Card, Net Banking); do not open a duplicate plan selection page.
+
+Remove any note or informational section from the payment page; present only payment methods for a clean, fast user experience.
+
+Make sure both rules are followed: the button is always present and visible only on homepage, and plan selection instantly directs to payment method choice.Replit AI Prompt – Combine Homepage Button & Recharge Flow:
+
+Update the User App with these changes:
+
+Random Match Button Placement:
+
+Render the "Random Match" button only on homepage tabs (Explore, New, Follow).
+
+Position it fixed at the bottom center (mid-footer overlay), always visible, even when scrolling.
+
+Do not render on any other pages.
+
+Add a smooth pop-in/out animation (fade or slide) for dynamic feel.
+
+Use high z-index so it floats above all content and navigation.
+
+Example CSS:
+
+css
+.random-match-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+Recharge Wallet Flow:
+
+Display all recharge packs upfront.
+
+When a user selects a pack, directly show payment options (UPI, Card, Net Banking)—do not require the user to select the pack again, and skip any extra confirmation screens.
+
+Remove any note/info area from the payment selection page.
+
+Summary:
+Button fixed at homepage mid-footer, and recharge selection immediately leads to payment options.Combined Replit AI Prompt – Homepage Button & Recharge Flow:
+
+Please make these user app changes:
+
+1. Random Match Button (Homepage Only):
+
+Show the "Random Match" button only on homepage tabs (Explore, New, Follow), never on any other page.
+
+Button is fixed at the bottom center (mid-footer) overlay, always visible, even while scrolling.
+
+Render via homepage’s layout for persistent presence.
+
+Add a smooth pop-in/out animation (fade/slide) for a dynamic feel.
+
+Use high z-index to float above all homepage elements and bottom navigation.
+
+Example CSS:
+
+css
+.random-match-btn {
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 9999;
+  transition: opacity 0.3s, visibility 0.3s;
+}
+2. Recharge Wallet Flow:
+
+Display all recharge packs on the Recharge Wallet page.
+
+After a user selects a pack, immediately display payment options (UPI App, Card, Net Banking); do not ask to reselect or confirm again.
+
+Remove any notes/info text from payment selection page—only payment options should appear.
+
+Apply both: Button stays at homepage mid-footer overlay, recharge flow goes straight from pack select to payment.
+
