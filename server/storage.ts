@@ -6,7 +6,8 @@ import {
   type GiftConfig,
   type InsertGiftConfig,
   type InsertGiftTransaction,
-  type InsertRechargeTransaction
+  type InsertRechargeTransaction,
+  type InsertCallTransaction
 } from "@shared/schema";
 import { randomUUID } from "crypto";
 
@@ -36,6 +37,7 @@ export interface IStorage {
   // Transaction operations
   createGiftTransaction(transaction: InsertGiftTransaction): Promise<void>;
   createRechargeTransaction(transaction: InsertRechargeTransaction): Promise<void>;
+  createCallTransaction(transaction: InsertCallTransaction): Promise<void>;
 }
 
 export class MemStorage implements IStorage {
@@ -199,6 +201,11 @@ export class MemStorage implements IStorage {
   async createRechargeTransaction(transaction: InsertRechargeTransaction): Promise<void> {
     // In a real implementation, this would store in a database
     console.log("Recharge transaction created:", transaction);
+  }
+
+  async createCallTransaction(transaction: InsertCallTransaction): Promise<void> {
+    // In a real implementation, this would store in a database
+    console.log("Call transaction created:", transaction);
   }
 }
 

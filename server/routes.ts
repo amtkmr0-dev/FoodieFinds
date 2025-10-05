@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertUserWalletSchema, insertGiftConfigSchema, insertGiftTransactionSchema, insertRechargeTransactionSchema } from "@shared/schema";
+import { insertUserWalletSchema, insertGiftConfigSchema, insertGiftTransactionSchema, insertRechargeTransactionSchema, insertCallTransactionSchema } from "@shared/schema";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Wallet routes
@@ -35,6 +35,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
         amount,
         paymentMethod,
         status: "success",
+      });
+      
+      res.json({ success: true, wallet });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
+  });
+
+  app.post("/api/wallet/deduct-call", async (req, res) => {
+    try {
+      const validatedData = insertCallTransactionSchema.parse(req.body);
+      const { userId, creatorId, durationSeconds, pricePerMinute, totalCost } = validatedData;
+      
+      // Deduct from wallet
+      const wallet = await storage.deductFromWallet(userId, parseFloat(totalCost));
+      
+      // Create call transaction record
+      await storage.createCallTransaction({
+        userId,
+        creatorId,
+        durationSeconds,
+        pricePerMinute,
+        totalCost,
       });
       
       res.json({ success: true, wallet });

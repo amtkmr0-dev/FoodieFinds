@@ -6,6 +6,9 @@ import { PhoneOff, Gift, Wallet } from "lucide-react";
 import { GiftSelectionModal } from "./GiftSelectionModal";
 import { useWallet } from "@/hooks/useWallet";
 import { useLocation } from "wouter";
+import { useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 
 interface CallInterfaceProps {
   creatorName: string;
@@ -26,6 +29,7 @@ export function CallInterface({
   const [showGiftModal, setShowGiftModal] = useState(false);
   const { balance } = useWallet();
   const [, setLocation] = useLocation();
+  const { toast } = useToast();
 
   useEffect(() => {
     const timer = setInterval(() => {
@@ -50,9 +54,46 @@ export function CallInterface({
     .toUpperCase()
     .slice(0, 2);
 
+  const endCallMutation = useMutation({
+    mutationFn: async (callData: { userId: string; creatorId: string; durationSeconds: number; pricePerMinute: number; totalCost: string }) => {
+      const response = await apiRequest("POST", "/api/wallet/deduct-call", callData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
+      localStorage.setItem("linky_first_call_completed", "true");
+    },
+  });
+
   const handleEndCall = () => {
-    localStorage.setItem("linky_first_call_completed", "true");
-    onEndCall?.();
+    const userId = localStorage.getItem("linky_device_id") || "user_001";
+    
+    endCallMutation.mutate(
+      {
+        userId,
+        creatorId,
+        durationSeconds: duration,
+        pricePerMinute,
+        totalCost: cost.toFixed(2),
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Call Ended",
+            description: `₹${cost} has been deducted from your wallet.`,
+          });
+          onEndCall?.();
+        },
+        onError: (error) => {
+          toast({
+            title: "Error",
+            description: error.message || "Failed to process call charges.",
+            variant: "destructive",
+          });
+          onEndCall?.();
+        },
+      }
+    );
   };
 
   const handleRecharge = () => {

@@ -185,3 +185,22 @@ export const insertRechargeTransactionSchema = createInsertSchema(rechargeTransa
 
 export type InsertRechargeTransaction = z.infer<typeof insertRechargeTransactionSchema>;
 export type RechargeTransaction = typeof rechargeTransactions.$inferSelect;
+
+// Call Transactions table
+export const callTransactions = pgTable("call_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: text("user_id").notNull(), // User who made the call
+  creatorId: text("creator_id").notNull(), // Creator who received the call
+  durationSeconds: integer("duration_seconds").notNull(), // Call duration in seconds
+  pricePerMinute: integer("price_per_minute").notNull(), // Rate at the time of call
+  totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(), // Total cost charged
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCallTransactionSchema = createInsertSchema(callTransactions).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCallTransaction = z.infer<typeof insertCallTransactionSchema>;
+export type CallTransaction = typeof callTransactions.$inferSelect;
