@@ -1,7 +1,7 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, UserPlus, MapPin, Users, Languages } from "lucide-react";
+import { Phone, UserPlus, MapPin, Users, Languages, MessageCircle } from "lucide-react";
 
 interface CreatorProfileHeaderProps {
   name: string;
@@ -89,11 +89,11 @@ export function CreatorProfileHeader({
 
       <div className="flex gap-3">
         <Button
-          variant="outline"
           className="flex-1"
           onClick={onChat}
           data-testid="button-chat"
         >
+          <MessageCircle className="w-4 h-4 mr-2" />
           Say Hello
         </Button>
         <Button

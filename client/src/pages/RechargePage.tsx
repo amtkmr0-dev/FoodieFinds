@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { PaymentGatewayModal } from "@/components/PaymentGatewayModal";
-import { RandomMatchButton } from "@/components/RandomMatchButton";
 import { ChevronLeft, Wallet, CreditCard } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -103,8 +102,6 @@ export default function RechargePage() {
         onClose={() => setShowPaymentModal(false)}
         onSelectGateway={handleSelectGateway}
       />
-
-      <RandomMatchButton />
     </div>
   );
 }

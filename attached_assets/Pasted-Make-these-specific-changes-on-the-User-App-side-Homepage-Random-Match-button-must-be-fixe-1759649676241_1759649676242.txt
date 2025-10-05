@@ -1,0 +1,66 @@
+Make these specific changes on the User App side:
+
+Homepage:
+
+"Random Match" button must be fixed at the bottom center of the screen (see previous instructions/screenshot). The position should not move as the user scrolls; ensure it’s always accessible across all main pages.
+
+Profile Section:
+
+Add a “Say Hello” button styled identically to the “Talk Now” button, including a functional chat/message icon.
+
+Button should clearly invite the user to connect and be visually consistent with call actions.
+
+Balance Icon:
+
+On the homepage, make the balance icon clickable.
+
+Clicking the balance icon should open the Recharge option/modal immediately.
+
+Recharge Wallet Flow:
+
+When clicking “Recharge Wallet” and selecting any recharge pack, redirect the user directly to the payment gateway page.
+
+On the payment gateway screen, prominently display multiple payment method choices: UPI App, Card, Net Banking.
+
+Remove the "Note" section from the Recharge Wallet page—no extra informational text should be shown during payment selection.
+
+Summary:
+Apply these clear, specific UI flow changes for homepage, profile, balance, and payment options as described and ensure payment is seamless and uncluttered for users.Replit AI Prompt – UI & Payment Flow Updates for User App:
+
+On homepage, make the "Random Match" button fixed at bottom center—always visible and accessible, no matter the page or scroll position.
+
+In the profile section, add a “Say Hello” button designed like “Talk Now” (same style, with chat/function icon).
+
+Make the balance icon on the homepage clickable; clicking it should open the recharge options.
+
+In “Recharge Wallet”, when a user selects a recharge pack, immediately redirect to the payment gateway page. Show UPI App, Card, and Net Banking payment options there. Remove the “Note” section from the payment selection page.
+
+Apply these UI and flow changes so navigation and payments remain clean, seamless, and consistent.Prompt for Replit AI – Update User App (Homepage, Profile, Recharge Flow):
+
+Move and fix the "Random Match" button at the bottom center of every homepage and main screen, always visible, unaffected by scrolling.
+
+On all user profile cards, add a "Say Hello" button styled like "Talk Now" and include a chat/function icon.
+
+Make the homepage balance icon clickable—on click, it should instantly open the Recharge options/modal.
+
+Change the "Recharge Wallet" flow: after selecting a recharge pack, directly redirect to the payment gateway page (no intermediate screens). The payment gateway page must offer UPI App, Card, and Net Banking options. Remove any note or info section from this page.
+
+Apply these changes to improve the UI and streamline user payment flows, keeping the experience simple and clean.Prompt for Replit AI:
+
+Apply the following changes to the User App:
+
+On the homepage, fix the "Random Match" button to the bottom center, always visible regardless of scrolling/navigating.
+
+In the profile section, add a "Say Hello" button that looks and works just like the "Talk Now" button. Include a function/chat icon.
+
+Make the balance icon on the homepage clickable—it should open the recharge options/modal immediately when clicked.
+
+In the "Recharge Wallet" section:
+
+When a recharge pack is selected, directly redirect to the payment gateway page.
+
+Show payment options: UPI App, Card, Net Banking (no other intermediate page).
+
+Remove the "Note" section from this page so payment choices are the only focus.
+
+Implement these UI and payment flow improvements for a smoother, more user-friendly experience.
