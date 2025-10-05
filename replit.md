@@ -1,8 +1,8 @@
-# Talkin Platform
+# LINKY Platform
 
 ## Overview
 
-Talkin is a voice-calling platform that connects users with creators for paid conversations, operating on a pay-per-minute model in INR. The platform comprises three main applications: a User App for browsing creators and initiating calls, a Creator & Agency App for profile and earning management, and an Admin Dashboard for platform oversight and creator approval. It aims to provide transparent financial transactions and strong privacy protections.
+LINKY (Real Voices, Real Connections.) is a voice-calling platform that connects users with creators for paid conversations, operating on a pay-per-minute model in INR. The platform comprises three main applications: a User App for browsing creators and initiating calls, a Creator & Agency App for profile and earning management, and an Admin Dashboard for platform oversight and creator approval. It aims to provide transparent financial transactions and strong privacy protections.
 
 ## User Preferences
 

@@ -78,7 +78,7 @@ export default function CreatorLogin() {
             </div>
             <CardTitle className="text-2xl font-bold">Creator Login</CardTitle>
             <p className="text-muted-foreground">
-              Join Talkin as a Creator and start earning
+              Join LINKY as a Creator and start earning
             </p>
           </CardHeader>
 

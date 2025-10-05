@@ -110,7 +110,7 @@ export default function PendingApproval() {
             {approvalStatus === "approved" && (
               <div className="text-center space-y-4">
                 <p className="text-muted-foreground">
-                  Congratulations! Your profile has been approved. You can now start earning on Talkin.
+                  Congratulations! Your profile has been approved. You can now start earning on LINKY.
                 </p>
                 <Button
                   className="w-full"

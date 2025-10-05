@@ -35,7 +35,8 @@ export function AppSelector({ onSelectApp }: AppSelectorProps) {
     <div className="min-h-screen bg-gradient-to-b from-primary/5 to-background flex items-center justify-center p-4">
       <div className="max-w-4xl w-full">
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold mb-3">Talkin Platform</h1>
+          <h1 className="text-4xl font-bold mb-3">LINKY</h1>
+          <p className="text-lg text-primary font-medium mb-2">Real Voices, Real Connections.</p>
           <p className="text-muted-foreground mb-6">
             Connect with creators through voice calls
           </p>

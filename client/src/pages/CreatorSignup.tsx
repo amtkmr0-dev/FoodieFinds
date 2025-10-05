@@ -33,7 +33,7 @@ export default function CreatorSignup() {
           <h1 className="text-3xl font-bold mb-2">
             {role === "creator" ? "Creator" : "Agency"} Registration
           </h1>
-          <p className="text-muted-foreground">Join the Talkin platform</p>
+          <p className="text-muted-foreground">Join the LINKY platform</p>
         </div>
 
         <Card className="p-6 mb-6">
