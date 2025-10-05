@@ -80,8 +80,8 @@ export default function CreatorApp() {
   // Withdrawal state
   const [withdrawalAmount, setWithdrawalAmount] = useState("");
 
-  // Random call setting
-  const [randomCallEnabled, setRandomCallEnabled] = useState(true);
+  // Random Match setting
+  const [randomMatchEnabled, setRandomMatchEnabled] = useState(true);
 
   // Mock data
   const creatorStats = {
@@ -1171,33 +1171,33 @@ export default function CreatorApp() {
               </CardContent>
             </Card>
 
-            {/* Random Call Settings */}
+            {/* Random Match Settings */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shuffle className="w-5 h-5 text-primary" />
-                  Random Call Settings
+                  Random Match Settings
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <p className="font-medium">Enable Random Call</p>
+                    <p className="font-medium">Enable Random Match</p>
                     <p className="text-sm text-muted-foreground">
-                      Allow users to connect with you through random call feature
+                      Allow users to connect with you through random match feature at ₹25/min
                     </p>
                   </div>
                   <Switch
-                    checked={randomCallEnabled}
-                    onCheckedChange={setRandomCallEnabled}
-                    data-testid="switch-random-call"
+                    checked={randomMatchEnabled}
+                    onCheckedChange={setRandomMatchEnabled}
+                    data-testid="switch-random-match"
                   />
                 </div>
-                {randomCallEnabled && (
+                {randomMatchEnabled && (
                   <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                     <p className="text-sm">
-                      <strong>Note:</strong> When enabled, users will see a pulsing Random Call button 
-                      that allows them to instantly connect with you. This helps increase your visibility 
+                      <strong>Note:</strong> When enabled, users clicking the Random Match button will be 
+                      matched with you at a fixed rate of ₹25/min. This helps increase your visibility 
                       and earnings.
                     </p>
                   </div>
