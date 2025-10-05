@@ -196,7 +196,7 @@ export default function UserApp() {
           pricePerMinute={25}
           onAccept={() => {
             setShowIncomingCall(false);
-            setLocation(`/user/call/${randomMatchedCreator.id}`);
+            setLocation(`/user/call/${randomMatchedCreator.id}?randomMatch=true`);
           }}
           onReject={() => {
             setShowIncomingCall(false);

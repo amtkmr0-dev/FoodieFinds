@@ -29,7 +29,7 @@ import { useLocation, useParams } from "wouter";
 import { creatorsData } from "@/lib/creatorsData";
 
 function CallInterfaceWrapper() {
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
   const creatorId = params.id;
   
@@ -45,7 +45,10 @@ function CallInterfaceWrapper() {
     return null;
   }
   
-  const pricePerMinute = creator.randomMatchEnabled ? 25 : creator.price;
+  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+  const isRandomMatch = searchParams.get('randomMatch') === 'true';
+  
+  const pricePerMinute = (isRandomMatch && creator.randomMatchEnabled) ? 25 : creator.price;
   
   return (
     <CallInterface
