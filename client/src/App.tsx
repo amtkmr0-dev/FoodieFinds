@@ -45,11 +45,13 @@ function CallInterfaceWrapper() {
     return null;
   }
   
+  const pricePerMinute = creator.randomMatchEnabled ? 25 : creator.price;
+  
   return (
     <CallInterface
       creatorName={creator.name}
       creatorId={creator.id}
-      pricePerMinute={creator.price}
+      pricePerMinute={pricePerMinute}
       onEndCall={() => setLocation("/user")}
     />
   );
