@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Switch, Route } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -26,99 +26,7 @@ import AccountPage from "@/pages/AccountPage";
 import { CallInterface } from "@/components/CallInterface";
 import NotFound from "@/pages/not-found";
 import { useLocation, useParams } from "wouter";
-
-const creatorsData = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    price: 45,
-    country: "India",
-    followers: 1250,
-    languages: ["English", "Hindi", "Tamil"],
-    isOnline: true,
-    randomMatchEnabled: true,
-  },
-  {
-    id: "2",
-    name: "Rahul Verma",
-    price: 38,
-    country: "India",
-    followers: 890,
-    languages: ["Hindi", "English"],
-    isOnline: false,
-    randomMatchEnabled: false,
-  },
-  {
-    id: "3",
-    name: "Priya Sharma",
-    price: 52,
-    country: "India",
-    followers: 2100,
-    languages: ["English", "Hindi", "Marathi"],
-    isOnline: true,
-    randomMatchEnabled: true,
-  },
-  {
-    id: "4",
-    name: "Amit Patel",
-    price: 40,
-    country: "India",
-    followers: 1500,
-    languages: ["Gujarati", "Hindi", "English"],
-    isOnline: true,
-    randomMatchEnabled: false,
-  },
-  {
-    id: "5",
-    name: "Neha Kapoor",
-    price: 48,
-    country: "India",
-    followers: 1780,
-    languages: ["English", "Hindi", "Punjabi"],
-    isOnline: true,
-    randomMatchEnabled: true,
-  },
-  {
-    id: "6",
-    name: "Vikram Singh",
-    price: 35,
-    country: "India",
-    followers: 750,
-    languages: ["Hindi", "English"],
-    isOnline: false,
-    randomMatchEnabled: false,
-  },
-  {
-    id: "7",
-    name: "Anjali Mehta",
-    price: 42,
-    country: "India",
-    followers: 1320,
-    languages: ["English", "Hindi", "Bengali"],
-    isOnline: true,
-    randomMatchEnabled: true,
-  },
-  {
-    id: "8",
-    name: "Karan Malhotra",
-    price: 50,
-    country: "India",
-    followers: 1950,
-    languages: ["Hindi", "English", "Urdu"],
-    isOnline: true,
-    randomMatchEnabled: false,
-  },
-  {
-    id: "9",
-    name: "Kavya Iyer",
-    price: 46,
-    country: "India",
-    followers: 1650,
-    languages: ["English", "Tamil", "Hindi"],
-    isOnline: false,
-    randomMatchEnabled: false,
-  },
-];
+import { creatorsData } from "@/lib/creatorsData";
 
 function CallInterfaceWrapper() {
   const [, setLocation] = useLocation();
@@ -127,8 +35,13 @@ function CallInterfaceWrapper() {
   
   const creator = creatorsData.find(c => c.id === creatorId);
   
+  useEffect(() => {
+    if (!creator) {
+      setLocation("/user");
+    }
+  }, [creator, setLocation]);
+  
   if (!creator) {
-    setLocation("/user");
     return null;
   }
   
