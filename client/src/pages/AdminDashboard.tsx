@@ -25,7 +25,8 @@ import {
   Phone,
   Mail,
   CreditCard,
-  FileText
+  FileText,
+  Gift
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import {
@@ -322,6 +323,7 @@ export default function AdminDashboard() {
   // Role-based navigation visibility
   const canSeeKYC = adminRole === "super_user" || adminRole === "admin";
   const canSeePricing = adminRole === "super_user" || adminRole === "admin";
+  const canSeeGifts = adminRole === "super_user" || adminRole === "admin";
   const canSeeAdmins = adminRole === "super_user";
   const canSeeSupport = true; // All roles can see support
 
@@ -348,7 +350,7 @@ export default function AdminDashboard() {
 
       <main className="max-w-7xl mx-auto px-4 py-6">
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
-          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${[canSeeKYC, canSeePricing, canSeeAdmins, canSeeSupport].filter(Boolean).length}, 1fr)` }}>
+          <TabsList className="grid w-full" style={{ gridTemplateColumns: `repeat(${[canSeeKYC, canSeePricing, canSeeGifts, canSeeAdmins, canSeeSupport].filter(Boolean).length}, 1fr)` }}>
             {canSeeKYC && (
               <TabsTrigger value="kyc" data-testid="tab-kyc">
                 <FileCheck className="w-4 h-4 mr-2" />
@@ -359,6 +361,12 @@ export default function AdminDashboard() {
               <TabsTrigger value="pricing" data-testid="tab-pricing">
                 <DollarSign className="w-4 h-4 mr-2" />
                 Pricing
+              </TabsTrigger>
+            )}
+            {canSeeGifts && (
+              <TabsTrigger value="gifts" data-testid="tab-gifts">
+                <Gift className="w-4 h-4 mr-2" />
+                Gifts
               </TabsTrigger>
             )}
             {canSeeAdmins && (
@@ -676,6 +684,171 @@ export default function AdminDashboard() {
                       )}
                     </div>
                   ))}
+                </CardContent>
+              </Card>
+            </TabsContent>
+          )}
+
+          {/* Gifts Tab */}
+          {canSeeGifts && (
+            <TabsContent value="gifts" className="space-y-6 mt-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Gift className="w-5 h-5" />
+                    Gift Management
+                  </CardTitle>
+                  <CardDescription>
+                    Configure gift amounts and options displayed to users during calls
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-3">
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Rose</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹20</div>
+                        <p className="text-xs text-muted-foreground mt-1">Single rose gift</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-rose">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Bouquet</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹40</div>
+                        <p className="text-xs text-muted-foreground mt-1">Flower bouquet</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-bouquet">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Diamond</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹50</div>
+                        <p className="text-xs text-muted-foreground mt-1">Sparkling diamond</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-diamond">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Emerald</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹100</div>
+                        <p className="text-xs text-muted-foreground mt-1">Precious emerald</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-emerald">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Sapphire</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹250</div>
+                        <p className="text-xs text-muted-foreground mt-1">Blue sapphire gem</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-sapphire">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Ruby</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹500</div>
+                        <p className="text-xs text-muted-foreground mt-1">Red ruby gem</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-ruby">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Crystal Heart</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹750</div>
+                        <p className="text-xs text-muted-foreground mt-1">Crystal heart gift</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-crystal">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Royal Crown</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹900</div>
+                        <p className="text-xs text-muted-foreground mt-1">Royal crown gift</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-crown">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-card/50">
+                      <CardHeader className="space-y-0 pb-2">
+                        <CardTitle className="text-sm font-medium">Golden Treasure</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">₹1000</div>
+                        <p className="text-xs text-muted-foreground mt-1">Ultimate treasure</p>
+                        <div className="mt-3 flex gap-2">
+                          <Button size="sm" variant="outline" className="flex-1" data-testid="button-edit-gift-treasure">
+                            Edit
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </div>
+                  
+                  <div className="mt-6 flex items-center justify-between">
+                    <p className="text-sm text-muted-foreground">
+                      Gifts are displayed to users during calls. Editing gift amounts updates them system-wide.
+                    </p>
+                    <Button data-testid="button-add-gift">
+                      <Gift className="w-4 h-4 mr-2" />
+                      Add New Gift
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             </TabsContent>
