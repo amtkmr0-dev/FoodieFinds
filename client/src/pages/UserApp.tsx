@@ -260,9 +260,10 @@ export default function UserApp() {
             size="lg"
             className={`shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${
               showRandomMatch 
-                ? 'opacity-100 scale-100' 
+                ? 'opacity-100 scale-100 animate-pulse' 
                 : 'opacity-0 scale-90 pointer-events-none'
             }`}
+            style={{ animationDuration: '2s' }}
             onClick={() => setShowIncomingCall(true)}
             data-testid="button-random-match"
           >
