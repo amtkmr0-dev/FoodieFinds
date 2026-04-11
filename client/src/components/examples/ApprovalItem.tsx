@@ -10,8 +10,8 @@ export default function ApprovalItemExample() {
         status="pending"
         details="Updated Aadhar & PAN documents"
         timestamp="2 hours ago"
-        onApprove={() => console.log("Approved")}
-        onReject={() => console.log("Rejected")}
+        onApprove={() => {/* Example: Handle approval */ }}
+        onReject={() => {/* Example: Handle rejection */ }}
       />
       <ApprovalItem
         id="2"

@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { ArrowUp, ArrowDown } from "lucide-react";
 import { LucideIcon } from "lucide-react";
@@ -13,7 +14,7 @@ interface StatsCardProps {
   description?: string;
 }
 
-export function StatsCard({ title, value, icon: Icon, trend, description }: StatsCardProps) {
+export const StatsCard = memo(function StatsCard({ title, value, icon: Icon, trend, description }: StatsCardProps) {
   return (
     <Card className="p-6" data-testid="card-stats">
       <div className="flex items-start justify-between">
@@ -31,9 +32,8 @@ export function StatsCard({ title, value, icon: Icon, trend, description }: Stat
                 <ArrowDown className="w-4 h-4 text-destructive" />
               )}
               <span
-                className={`text-sm font-medium ${
-                  trend.isPositive ? "text-success" : "text-destructive"
-                }`}
+                className={`text-sm font-medium ${trend.isPositive ? "text-success" : "text-destructive"
+                  }`}
               >
                 {Math.abs(trend.value)}%
               </span>
@@ -46,4 +46,4 @@ export function StatsCard({ title, value, icon: Icon, trend, description }: Stat
       </div>
     </Card>
   );
-}
+});

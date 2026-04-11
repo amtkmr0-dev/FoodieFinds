@@ -10,7 +10,7 @@ export default function CreatorCardExample() {
         country="India"
         followers={1250}
         isOnline={true}
-        onClick={() => console.log("Creator card clicked")}
+        onClick={() => {/* Example: Handle creator card click */ }}
       />
     </div>
   );

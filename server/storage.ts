@@ -1,31 +1,70 @@
-import { 
-  type User, 
+import {
+  type User,
   type InsertUser,
   type UserWallet,
-  type InsertUserWallet,
   type GiftConfig,
   type InsertGiftConfig,
   type InsertGiftTransaction,
-  type InsertRechargeTransaction,
-  type InsertCallTransaction
-} from "@shared/schema";
+  type InsertCallTransaction,
+  type RechargeTransaction,
+} from "@foodiefinds/shared";
 import { randomUUID } from "crypto";
 
 // modify the interface with any CRUD methods
 // you might need
 
+// Extended types for transaction storage
+interface StoredTransaction {
+  id: string;
+  userId: string;
+  type: 'recharge' | 'call' | 'gift' | 'refund';
+  amount: number;
+  currency: string;
+  status: 'pending' | 'processing' | 'success' | 'failed' | 'cancelled' | 'refunded';
+  paymentMethod?: 'upi' | 'card' | 'net_banking' | 'wallet';
+  transactionId: string;
+  gatewayTransactionId?: string;
+  bonusAmount: number;
+  metadata?: Record<string, any>;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface WalletOperation {
+  userId: string;
+  operation: 'credit' | 'debit';
+  amount: number;
+  transactionId: string;
+  description?: string;
+  metadata?: Record<string, any>;
+}
+
+interface WalletOperationResult {
+  success: boolean;
+  wallet: UserWallet;
+  transaction?: StoredTransaction;
+  error?: {
+    code: string;
+    message: string;
+  };
+}
+
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  
+
   // Wallet operations
   getWallet(userId: string): Promise<UserWallet | undefined>;
-  createWallet(wallet: InsertUserWallet): Promise<UserWallet>;
+  createWallet(userId: string, balance: number): Promise<UserWallet>;
   updateWalletBalance(userId: string, newBalance: number): Promise<UserWallet>;
   addToWallet(userId: string, amount: number): Promise<UserWallet>;
   deductFromWallet(userId: string, amount: number): Promise<UserWallet>;
-  
+
+  // Atomic wallet operations
+  executeWalletOperation(operation: WalletOperation): Promise<WalletOperationResult>;
+  rollbackTransaction(transactionId: string): Promise<boolean>;
+
   // Gift operations
   getAllGifts(): Promise<GiftConfig[]>;
   getActiveGifts(): Promise<GiftConfig[]>;
@@ -33,40 +72,61 @@ export interface IStorage {
   createGift(gift: InsertGiftConfig): Promise<GiftConfig>;
   updateGift(id: string, gift: Partial<InsertGiftConfig>): Promise<GiftConfig>;
   deleteGift(id: string): Promise<void>;
-  
+
   // Transaction operations
   createGiftTransaction(transaction: InsertGiftTransaction): Promise<void>;
-  createRechargeTransaction(transaction: InsertRechargeTransaction): Promise<void>;
+  createRechargeTransaction(transaction: {
+    userId: string;
+    amount: number;
+    paymentMethod: 'upi' | 'card' | 'net_banking' | 'wallet';
+    status?: 'pending' | 'success' | 'failed';
+    transactionId?: string;
+  }): Promise<void>;
   createCallTransaction(transaction: InsertCallTransaction): Promise<void>;
+
+  // Transaction history operations
+  getTransactionHistory(userId: string, options?: {
+    type?: string;
+    status?: string;
+    paymentMethod?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<StoredTransaction[]>;
+  getTransactionById(transactionId: string): Promise<StoredTransaction | undefined>;
+  updateTransactionStatus(transactionId: string, status: string): Promise<StoredTransaction>;
 }
 
 export class MemStorage implements IStorage {
   private users: Map<string, User>;
   private wallets: Map<string, UserWallet>;
   private gifts: Map<string, GiftConfig>;
+  private transactions: Map<string, StoredTransaction>;
+  private walletLocks: Map<string, Promise<void>>; // For atomic operations
 
   constructor() {
     this.users = new Map();
     this.wallets = new Map();
     this.gifts = new Map();
-    
+    this.transactions = new Map();
+    this.walletLocks = new Map();
+
     // Initialize with default gifts
     this.initializeDefaultGifts();
   }
 
   private async initializeDefaultGifts() {
     const defaultGifts = [
-      { amount: 20, name: "Rose", imageUrl: "rose", iconType: "Heart", sortOrder: 1, isActive: "true" },
-      { amount: 40, name: "Tulip", imageUrl: "tulip", iconType: "Sparkles", sortOrder: 2, isActive: "true" },
-      { amount: 50, name: "Sunflower", imageUrl: "sunflower", iconType: "Sun", sortOrder: 3, isActive: "true" },
-      { amount: 100, name: "Diamond", imageUrl: "diamond", iconType: "Gem", sortOrder: 4, isActive: "true" },
-      { amount: 250, name: "Crown", imageUrl: "crown", iconType: "Crown", sortOrder: 5, isActive: "true" },
-      { amount: 500, name: "Star", imageUrl: "star", iconType: "Star", sortOrder: 6, isActive: "true" },
-      { amount: 750, name: "Rocket", imageUrl: "rocket", iconType: "Rocket", sortOrder: 7, isActive: "true" },
-      { amount: 900, name: "Trophy", imageUrl: "trophy", iconType: "Trophy", sortOrder: 8, isActive: "true" },
-      { amount: 1000, name: "Universe", imageUrl: "universe", iconType: "Sparkles", sortOrder: 9, isActive: "true" },
+      { name: "Rose", imageUrl: "rose", price: 20, isActive: true },
+      { name: "Tulip", imageUrl: "tulip", price: 40, isActive: true },
+      { name: "Sunflower", imageUrl: "sunflower", price: 50, isActive: true },
+      { name: "Diamond", imageUrl: "diamond", price: 100, isActive: true },
+      { name: "Crown", imageUrl: "crown", price: 250, isActive: true },
+      { name: "Star", imageUrl: "star", price: 500, isActive: true },
+      { name: "Rocket", imageUrl: "rocket", price: 750, isActive: true },
+      { name: "Trophy", imageUrl: "trophy", price: 900, isActive: true },
+      { name: "Universe", imageUrl: "universe", price: 1000, isActive: true },
     ];
-    
+
     for (const gift of defaultGifts) {
       await this.createGift(gift as InsertGiftConfig);
     }
@@ -94,26 +154,26 @@ export class MemStorage implements IStorage {
     return this.wallets.get(userId);
   }
 
-  async createWallet(wallet: InsertUserWallet): Promise<UserWallet> {
+  async createWallet(userId: string, balance: number): Promise<UserWallet> {
     const id = randomUUID();
     const newWallet: UserWallet = {
       id,
-      userId: wallet.userId,
-      balance: wallet.balance || "0.00",
+      userId,
+      balance,
       updatedAt: new Date(),
     };
-    this.wallets.set(wallet.userId, newWallet);
+    this.wallets.set(userId, newWallet);
     return newWallet;
   }
 
   async updateWalletBalance(userId: string, newBalance: number): Promise<UserWallet> {
     let wallet = await this.getWallet(userId);
     if (!wallet) {
-      wallet = await this.createWallet({ userId, balance: newBalance.toString() });
+      wallet = await this.createWallet(userId, newBalance);
     } else {
       wallet = {
         ...wallet,
-        balance: newBalance.toString(),
+        balance: newBalance,
         updatedAt: new Date(),
       };
       this.wallets.set(userId, wallet);
@@ -123,7 +183,7 @@ export class MemStorage implements IStorage {
 
   async addToWallet(userId: string, amount: number): Promise<UserWallet> {
     let wallet = await this.getWallet(userId);
-    const currentBalance = wallet ? parseFloat(wallet.balance) : 0;
+    const currentBalance = wallet ? wallet.balance : 0;
     const newBalance = currentBalance + amount;
     return this.updateWalletBalance(userId, newBalance);
   }
@@ -133,7 +193,7 @@ export class MemStorage implements IStorage {
     if (!wallet) {
       throw new Error("Wallet not found");
     }
-    const currentBalance = parseFloat(wallet.balance);
+    const currentBalance = wallet.balance;
     if (currentBalance < amount) {
       throw new Error("Insufficient balance");
     }
@@ -141,15 +201,155 @@ export class MemStorage implements IStorage {
     return this.updateWalletBalance(userId, newBalance);
   }
 
+  // Atomic wallet operations with locking
+  private async acquireWalletLock(userId: string): Promise<() => void> {
+    // Wait for any existing operation to complete
+    while (this.walletLocks.has(userId)) {
+      await this.walletLocks.get(userId);
+    }
+
+    // Create a new lock promise
+    let releaseLock: () => void;
+    const lockPromise = new Promise<void>((resolve) => {
+      releaseLock = resolve;
+    });
+    this.walletLocks.set(userId, lockPromise);
+
+    // Return release function
+    return () => {
+      this.walletLocks.delete(userId);
+      releaseLock!();
+    };
+  }
+
+  async executeWalletOperation(operation: WalletOperation): Promise<WalletOperationResult> {
+    const releaseLock = await this.acquireWalletLock(operation.userId);
+
+    try {
+      const wallet = await this.getWallet(operation.userId);
+      if (!wallet) {
+        return {
+          success: false,
+          wallet: {} as any,
+          error: {
+            code: 'INSUFFICIENT_FUNDS',
+            message: 'Wallet not found',
+          },
+        };
+      }
+
+      const currentBalance = wallet.balance;
+      let newBalance = currentBalance;
+
+      // Execute operation
+      if (operation.operation === 'credit') {
+        newBalance = currentBalance + operation.amount;
+      } else if (operation.operation === 'debit') {
+        if (currentBalance < operation.amount) {
+          return {
+            success: false,
+            wallet,
+            error: {
+              code: 'INSUFFICIENT_FUNDS',
+              message: 'Insufficient balance',
+            },
+          };
+        }
+        newBalance = currentBalance - operation.amount;
+      }
+
+      // Update wallet balance
+      const updatedWallet = await this.updateWalletBalance(operation.userId, newBalance);
+
+      // Create transaction record
+      const transaction: StoredTransaction = {
+        id: randomUUID(),
+        userId: operation.userId,
+        type: operation.operation === 'credit' ? 'recharge' : 'call',
+        amount: operation.amount,
+        currency: 'INR',
+        status: 'success',
+        transactionId: operation.transactionId,
+        bonusAmount: 0,
+        metadata: operation.metadata,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      this.transactions.set(transaction.id, transaction);
+
+      return {
+        success: true,
+        wallet: updatedWallet,
+        transaction,
+      };
+    } catch (error: any) {
+      return {
+        success: false,
+        wallet: {} as any,
+        error: {
+          code: 'PROCESSING_ERROR',
+          message: error.message || 'Operation failed',
+        },
+      };
+    } finally {
+      releaseLock();
+    }
+  }
+
+  async rollbackTransaction(transactionId: string): Promise<boolean> {
+    const transaction = Array.from(this.transactions.values()).find(
+      t => t.transactionId === transactionId
+    );
+
+    if (!transaction || transaction.status !== 'success') {
+      return false;
+    }
+
+    const releaseLock = await this.acquireWalletLock(transaction.userId);
+
+    try {
+      const wallet = await this.getWallet(transaction.userId);
+      if (!wallet) {
+        return false;
+      }
+
+      // Reverse transaction
+      const currentBalance = wallet.balance;
+      let newBalance = currentBalance;
+
+      if (transaction.type === 'recharge' || transaction.type === 'gift') {
+        // Credit transactions need to be debited
+        newBalance = currentBalance - transaction.amount;
+      } else if (transaction.type === 'call') {
+        // Debit transactions need to be credited
+        newBalance = currentBalance + transaction.amount;
+      }
+
+      // Update wallet balance
+      await this.updateWalletBalance(transaction.userId, newBalance);
+
+      // Update transaction status
+      transaction.status = 'refunded';
+      transaction.updatedAt = new Date();
+      this.transactions.set(transaction.id, transaction);
+
+      return true;
+    } catch (error) {
+      return false;
+    } finally {
+      releaseLock();
+    }
+  }
+
   // Gift operations
   async getAllGifts(): Promise<GiftConfig[]> {
-    return Array.from(this.gifts.values()).sort((a, b) => a.sortOrder - b.sortOrder);
+    return Array.from(this.gifts.values());
   }
 
   async getActiveGifts(): Promise<GiftConfig[]> {
     return Array.from(this.gifts.values())
-      .filter(g => g.isActive === "true")
-      .sort((a, b) => a.sortOrder - b.sortOrder);
+      .filter(g => g.isActive);
   }
 
   async getGift(id: string): Promise<GiftConfig | undefined> {
@@ -161,14 +361,11 @@ export class MemStorage implements IStorage {
     const newGift: GiftConfig = {
       id,
       name: gift.name,
-      amount: gift.amount,
       imageUrl: gift.imageUrl,
-      iconType: gift.iconType || null,
-      isActive: gift.isActive || "true",
-      sortOrder: gift.sortOrder || 0,
-      updatedBy: gift.updatedBy || null,
+      price: gift.price,
+      isActive: gift.isActive !== undefined ? gift.isActive : true,
       createdAt: new Date(),
-      updatedAt: new Date(),
+      createdBy: gift.createdBy || null,
     };
     this.gifts.set(id, newGift);
     return newGift;
@@ -182,7 +379,6 @@ export class MemStorage implements IStorage {
     const updatedGift: GiftConfig = {
       ...gift,
       ...giftUpdate,
-      updatedAt: new Date(),
     };
     this.gifts.set(id, updatedGift);
     return updatedGift;
@@ -192,20 +388,123 @@ export class MemStorage implements IStorage {
     this.gifts.delete(id);
   }
 
-  // Transaction operations (in-memory, just log for now)
+  // Transaction operations
   async createGiftTransaction(transaction: InsertGiftTransaction): Promise<void> {
-    // In a real implementation, this would store in a database
-    console.log("Gift transaction created:", transaction);
+    const transactionRecord: StoredTransaction = {
+      id: randomUUID(),
+      userId: transaction.senderId,
+      type: 'gift',
+      amount: transaction.totalAmount,
+      currency: 'INR',
+      status: 'success',
+      transactionId: `GIFT${Date.now()}`,
+      bonusAmount: 0,
+      metadata: {
+        recipientId: transaction.receiverId,
+        giftId: transaction.giftId,
+        quantity: transaction.quantity,
+        message: transaction.message,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.transactions.set(transactionRecord.id, transactionRecord);
   }
 
-  async createRechargeTransaction(transaction: InsertRechargeTransaction): Promise<void> {
-    // In a real implementation, this would store in a database
-    console.log("Recharge transaction created:", transaction);
+  async createRechargeTransaction(transaction: {
+    userId: string;
+    amount: number;
+    paymentMethod: 'upi' | 'card' | 'net_banking' | 'wallet';
+    status?: 'pending' | 'success' | 'failed';
+    transactionId?: string;
+  }): Promise<void> {
+    const transactionRecord: StoredTransaction = {
+      id: randomUUID(),
+      userId: transaction.userId,
+      type: 'recharge',
+      amount: transaction.amount,
+      currency: 'INR',
+      status: transaction.status || 'pending',
+      paymentMethod: transaction.paymentMethod,
+      transactionId: transaction.transactionId || `RECHARGE${Date.now()}`,
+      bonusAmount: 0,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.transactions.set(transactionRecord.id, transactionRecord);
   }
 
   async createCallTransaction(transaction: InsertCallTransaction): Promise<void> {
-    // In a real implementation, this would store in a database
-    console.log("Call transaction created:", transaction);
+    const transactionRecord: StoredTransaction = {
+      id: randomUUID(),
+      userId: transaction.userId,
+      type: 'call',
+      amount: transaction.totalCost,
+      currency: 'INR',
+      status: 'success',
+      transactionId: `CALL${Date.now()}`,
+      bonusAmount: 0,
+      metadata: {
+        creatorId: transaction.creatorId,
+        callType: transaction.callType,
+        durationSeconds: transaction.durationSeconds,
+        pricePerMinute: transaction.pricePerMinute,
+      },
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    this.transactions.set(transactionRecord.id, transactionRecord);
+  }
+
+  // Transaction history operations
+  async getTransactionHistory(userId: string, options?: {
+    type?: string;
+    status?: string;
+    paymentMethod?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<StoredTransaction[]> {
+    let transactions = Array.from(this.transactions.values())
+      .filter(t => t.userId === userId);
+
+    // Apply filters
+    if (options?.type) {
+      transactions = transactions.filter(t => t.type === options.type);
+    }
+    if (options?.status) {
+      transactions = transactions.filter(t => t.status === options.status);
+    }
+    if (options?.paymentMethod) {
+      transactions = transactions.filter(t => t.paymentMethod === options.paymentMethod);
+    }
+
+    // Sort by creation date (newest first)
+    transactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    // Apply pagination
+    const limit = options?.limit || 20;
+    const offset = options?.offset || 0;
+
+    return transactions.slice(offset, offset + limit);
+  }
+
+  async getTransactionById(transactionId: string): Promise<StoredTransaction | undefined> {
+    return Array.from(this.transactions.values()).find(
+      t => t.transactionId === transactionId || t.id === transactionId
+    );
+  }
+
+  async updateTransactionStatus(transactionId: string, status: string): Promise<StoredTransaction> {
+    const transaction = await this.getTransactionById(transactionId);
+    if (!transaction) {
+      throw new Error('Transaction not found');
+    }
+
+    transaction.status = status as any;
+    transaction.updatedAt = new Date();
+    this.transactions.set(transaction.id, transaction);
+
+    return transaction;
   }
 }
 

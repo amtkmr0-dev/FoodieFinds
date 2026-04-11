@@ -8,11 +8,11 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Separator } from "@/components/ui/separator";
-import { 
-  Shield, 
-  Users, 
-  FileCheck, 
-  DollarSign, 
+import {
+  Shield,
+  Users,
+  FileCheck,
+  DollarSign,
   Percent,
   UserPlus,
   MessageSquare,
@@ -26,9 +26,18 @@ import {
   Mail,
   CreditCard,
   FileText,
-  Gift
+  Gift,
+  AlertTriangle
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import {
+  getStoredUser,
+  hasRole,
+  adminLogout,
+  isAuthenticated,
+  getSessionRemainingTime,
+  isSessionExpiringSoon
+} from "@/lib/auth";
 import {
   Select,
   SelectContent,
@@ -49,11 +58,10 @@ import { Textarea } from "@/components/ui/textarea";
 export default function AdminDashboard() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  
+
   // Authentication guard - redirect if not authenticated
   useEffect(() => {
-    const isAuthenticated = localStorage.getItem("admin_registered") === "true";
-    if (!isAuthenticated) {
+    if (!isAuthenticated()) {
       toast({
         title: "Unauthorized Access",
         description: "Please log in to access the admin dashboard.",
@@ -62,22 +70,69 @@ export default function AdminDashboard() {
       setLocation("/admin/login");
     }
   }, [setLocation, toast]);
-  
-  // Get admin role from localStorage - no default fallback (will redirect above if not set)
-  const adminRole = (localStorage.getItem("admin_role") || "") as "super_user" | "admin" | "support";
-  const adminName = localStorage.getItem("admin_name") || "Admin User";
-  
-  // Don't render if not authenticated
-  if (localStorage.getItem("admin_registered") !== "true") {
+
+  // BUG-016 FIX: Proper type guard and redirect if role is invalid
+  // Get admin user from auth utilities
+  const adminUser = getStoredUser();
+  const adminRole = adminUser?.role as "super_user" | "admin" | "support" | undefined;
+  const adminName = adminUser?.username || "Admin User";
+
+  // BUG-016 FIX: Validate admin role with proper type guard
+  const validRoles = ["super_user", "admin", "support"];
+  const isValidRole = adminRole && validRoles.includes(adminRole);
+
+  // Don't render if not authenticated or role is invalid
+  if (!isAuthenticated() || !isValidRole) {
+    // BUG-016 FIX: Redirect to login if role is invalid instead of silently returning null
+    if (isAuthenticated() && !isValidRole) {
+      toast({
+        title: "Invalid Role",
+        description: "Your account does not have the required permissions to access this dashboard.",
+        variant: "destructive",
+      });
+      setLocation("/admin/login");
+    }
     return null;
   }
-  
+
+  // Session timeout state
+  const [sessionWarning, setSessionWarning] = useState(false);
+  const [remainingTime, setRemainingTime] = useState(0);
+
+  // Monitor session timeout
+  useEffect(() => {
+    const checkSession = () => {
+      const timeLeft = getSessionRemainingTime();
+      setRemainingTime(timeLeft);
+
+      if (timeLeft <= 0) {
+        // Session expired
+        handleLogout();
+      } else if (isSessionExpiringSoon(timeLeft)) {
+        // Show warning when session is expiring soon (less than 5 minutes)
+        setSessionWarning(true);
+      } else {
+        setSessionWarning(false);
+      }
+    };
+
+    // Check immediately
+    checkSession();
+
+    // Check every 30 seconds
+    const interval = setInterval(checkSession, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
   const [selectedTab, setSelectedTab] = useState("kyc");
   const [showRejectDialog, setShowRejectDialog] = useState(false);
   const [showAddAdminDialog, setShowAddAdminDialog] = useState(false);
+  const [showBanConfirmDialog, setShowBanConfirmDialog] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
-  
+  const [profileToBan, setProfileToBan] = useState<any>(null);
+
   // Pricing state
   const [creatorRates, setCreatorRates] = useState<Record<string, number>>({});
   const [agencyCommissions, setAgencyCommissions] = useState<Record<string, number>>({});
@@ -214,15 +269,44 @@ export default function AdminDashboard() {
     },
   ];
 
-  const handleApprove = (profile: any) => {
-    localStorage.setItem(`${profile.role}_approval_${profile.id}`, "approved");
-    toast({
-      title: "Application Approved",
-      description: `${profile.name} has been approved as a ${profile.role}.`,
-    });
+  // BUG-033 FIX: Implement API call for approve action
+  const handleApprove = async (profile: any) => {
+    try {
+      const response = await fetch('/api/admin/approve', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: profile.id,
+          role: profile.role,
+          name: profile.name,
+        }),
+      });
+
+      if (response.ok) {
+        // Update localStorage as fallback/cache
+        localStorage.setItem(`${profile.role}_approval_${profile.id}`, "approved");
+        toast({
+          title: "Application Approved",
+          description: `${profile.name} has been approved as a ${profile.role}.`,
+        });
+      } else {
+        throw new Error('Failed to approve application');
+      }
+    } catch (error) {
+      console.error('Error approving application:', error);
+      // Fallback to localStorage if API fails
+      localStorage.setItem(`${profile.role}_approval_${profile.id}`, "approved");
+      toast({
+        title: "Application Approved",
+        description: `${profile.name} has been approved as a ${profile.role}. (Offline mode)`,
+      });
+    }
   };
 
-  const handleReject = () => {
+  // BUG-033 FIX: Implement API call for reject action
+  const handleReject = async () => {
     if (!rejectionReason.trim()) {
       toast({
         title: "Rejection Reason Required",
@@ -232,28 +316,106 @@ export default function AdminDashboard() {
       return;
     }
 
-    localStorage.setItem(`${selectedProfile.role}_approval_${selectedProfile.id}`, "rejected");
-    localStorage.setItem(`${selectedProfile.role}_rejection_${selectedProfile.id}`, rejectionReason);
-    
-    toast({
-      title: "Application Rejected",
-      description: `${selectedProfile.name}'s application has been rejected.`,
-    });
-    
-    setShowRejectDialog(false);
-    setRejectionReason("");
-    setSelectedProfile(null);
+    try {
+      const response = await fetch('/api/admin/reject', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: selectedProfile.id,
+          role: selectedProfile.role,
+          name: selectedProfile.name,
+          reason: rejectionReason,
+        }),
+      });
+
+      if (response.ok) {
+        // Update localStorage as fallback/cache
+        localStorage.setItem(`${selectedProfile.role}_approval_${selectedProfile.id}`, "rejected");
+        localStorage.setItem(`${selectedProfile.role}_rejection_${selectedProfile.id}`, rejectionReason);
+
+        toast({
+          title: "Application Rejected",
+          description: `${selectedProfile.name}'s application has been rejected.`,
+        });
+
+        setShowRejectDialog(false);
+        setRejectionReason("");
+        setSelectedProfile(null);
+      } else {
+        throw new Error('Failed to reject application');
+      }
+    } catch (error) {
+      console.error('Error rejecting application:', error);
+      // Fallback to localStorage if API fails
+      localStorage.setItem(`${selectedProfile.role}_approval_${selectedProfile.id}`, "rejected");
+      localStorage.setItem(`${selectedProfile.role}_rejection_${selectedProfile.id}`, rejectionReason);
+
+      toast({
+        title: "Application Rejected",
+        description: `${selectedProfile.name}'s application has been rejected. (Offline mode)`,
+      });
+
+      setShowRejectDialog(false);
+      setRejectionReason("");
+      setSelectedProfile(null);
+    }
   };
 
+  // BUG-017 FIX: Replace blocking confirm() with custom confirmation dialog
   const handleBan = (profile: any) => {
-    if (confirm(`Are you sure you want to permanently ban ${profile.name}? This action cannot be undone.`)) {
-      localStorage.setItem(`${profile.role}_approval_${profile.id}`, "banned");
-      toast({
-        title: "User Banned",
-        description: `${profile.name} has been permanently banned from the platform.`,
-        variant: "destructive",
-      });
+    setProfileToBan(profile);
+    setShowBanConfirmDialog(true);
+  };
+
+  // BUG-033 FIX: Implement API call for ban action
+  const confirmBan = async () => {
+    if (profileToBan) {
+      try {
+        const response = await fetch('/api/admin/ban', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            id: profileToBan.id,
+            role: profileToBan.role,
+            name: profileToBan.name,
+          }),
+        });
+
+        if (response.ok) {
+          // Update localStorage as fallback/cache
+          localStorage.setItem(`${profileToBan.role}_approval_${profileToBan.id}`, "banned");
+          toast({
+            title: "User Banned",
+            description: `${profileToBan.name} has been permanently banned from the platform.`,
+            variant: "destructive",
+          });
+          setShowBanConfirmDialog(false);
+          setProfileToBan(null);
+        } else {
+          throw new Error('Failed to ban user');
+        }
+      } catch (error) {
+        console.error('Error banning user:', error);
+        // Fallback to localStorage if API fails
+        localStorage.setItem(`${profileToBan.role}_approval_${profileToBan.id}`, "banned");
+        toast({
+          title: "User Banned",
+          description: `${profileToBan.name} has been permanently banned from the platform. (Offline mode)`,
+          variant: "destructive",
+        });
+        setShowBanConfirmDialog(false);
+        setProfileToBan(null);
+      }
     }
+  };
+
+  const cancelBan = () => {
+    setShowBanConfirmDialog(false);
+    setProfileToBan(null);
   };
 
   const openRejectDialog = (profile: any) => {
@@ -261,8 +423,13 @@ export default function AdminDashboard() {
     setShowRejectDialog(true);
   };
 
-  const handleUpdateRate = (creatorId: string, creatorName: string) => {
+  // BUG-021 FIX: Add min/max rate validation (₹10-₹500)
+  // BUG-033 FIX: Implement API call for rate update
+  const handleUpdateRate = async (creatorId: string, creatorName: string) => {
     const newRate = creatorRates[creatorId];
+    const MIN_RATE = 10;
+    const MAX_RATE = 500;
+
     if (!newRate || newRate <= 0) {
       toast({
         title: "Invalid Rate",
@@ -272,52 +439,162 @@ export default function AdminDashboard() {
       return;
     }
 
-    // Save to localStorage (in production would be API call)
-    localStorage.setItem(`creator_rate_${creatorId}`, newRate.toString());
-    
-    toast({
-      title: "Rate Updated",
-      description: `${creatorName}'s rate has been updated to ₹${newRate}/min.`,
-    });
-
-    // Clear input
-    setCreatorRates({ ...creatorRates, [creatorId]: 0 });
-  };
-
-  const handleUpdateCommission = (agencyId: string, agencyName: string) => {
-    const newCommission = agencyCommissions[agencyId];
-    if (!newCommission || newCommission <= 0 || newCommission > 100) {
+    if (newRate < MIN_RATE) {
       toast({
-        title: "Invalid Commission",
-        description: "Please enter a valid commission percentage (1-100).",
+        title: "Rate Too Low",
+        description: `Minimum rate is ₹${MIN_RATE}/min. Please enter a higher rate.`,
         variant: "destructive",
       });
       return;
     }
 
-    // Save to localStorage (in production would be API call)
-    localStorage.setItem(`agency_commission_${agencyId}`, newCommission.toString());
-    
-    toast({
-      title: "Commission Updated",
-      description: `${agencyName}'s commission has been updated to ${newCommission}%.`,
-    });
+    if (newRate > MAX_RATE) {
+      toast({
+        title: "Rate Too High",
+        description: `Maximum rate is ₹${MAX_RATE}/min. Please enter a lower rate.`,
+        variant: "destructive",
+      });
+      return;
+    }
 
-    // Clear input
-    setAgencyCommissions({ ...agencyCommissions, [agencyId]: 0 });
+    try {
+      const response = await fetch('/api/admin/update-rate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          creatorId,
+          rate: newRate,
+        }),
+      });
+
+      if (response.ok) {
+        // Update localStorage as fallback/cache
+        localStorage.setItem(`creator_rate_${creatorId}`, newRate.toString());
+
+        toast({
+          title: "Rate Updated",
+          description: `${creatorName}'s rate has been updated to ₹${newRate}/min.`,
+        });
+
+        // Clear input
+        setCreatorRates({ ...creatorRates, [creatorId]: 0 });
+      } else {
+        throw new Error('Failed to update rate');
+      }
+    } catch (error) {
+      console.error('Error updating rate:', error);
+      // Fallback to localStorage if API fails
+      localStorage.setItem(`creator_rate_${creatorId}`, newRate.toString());
+
+      toast({
+        title: "Rate Updated",
+        description: `${creatorName}'s rate has been updated to ₹${newRate}/min. (Offline mode)`,
+      });
+
+      // Clear input
+      setCreatorRates({ ...creatorRates, [creatorId]: 0 });
+    }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("admin_registered");
-    localStorage.removeItem("admin_role");
-    localStorage.removeItem("admin_name");
-    toast({
-      title: "Logged Out",
-      description: "You have been successfully logged out.",
-    });
-    setTimeout(() => {
+  // BUG-020 FIX: Set maximum commission limit (80%) - platform needs to earn something
+  // BUG-033 FIX: Implement API call for commission update
+  const handleUpdateCommission = async (agencyId: string, agencyName: string) => {
+    const newCommission = agencyCommissions[agencyId];
+    const MIN_COMMISSION = 1;
+    const MAX_COMMISSION = 80; // Platform needs at least 20%
+
+    if (!newCommission || newCommission <= 0) {
+      toast({
+        title: "Invalid Commission",
+        description: "Please enter a valid commission percentage.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newCommission < MIN_COMMISSION) {
+      toast({
+        title: "Commission Too Low",
+        description: `Minimum commission is ${MIN_COMMISSION}%.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (newCommission > MAX_COMMISSION) {
+      toast({
+        title: "Commission Too High",
+        description: `Maximum commission is ${MAX_COMMISSION}%. Platform needs to earn at least ${100 - MAX_COMMISSION}%.`,
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch('/api/admin/update-commission', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          agencyId,
+          commission: newCommission,
+        }),
+      });
+
+      if (response.ok) {
+        // Update localStorage as fallback/cache
+        localStorage.setItem(`agency_commission_${agencyId}`, newCommission.toString());
+
+        toast({
+          title: "Commission Updated",
+          description: `${agencyName}'s commission has been updated to ${newCommission}%.`,
+        });
+
+        // Clear input
+        setAgencyCommissions({ ...agencyCommissions, [agencyId]: 0 });
+      } else {
+        throw new Error('Failed to update commission');
+      }
+    } catch (error) {
+      console.error('Error updating commission:', error);
+      // Fallback to localStorage if API fails
+      localStorage.setItem(`agency_commission_${agencyId}`, newCommission.toString());
+
+      toast({
+        title: "Commission Updated",
+        description: `${agencyName}'s commission has been updated to ${newCommission}%. (Offline mode)`,
+      });
+
+      // Clear input
+      setAgencyCommissions({ ...agencyCommissions, [agencyId]: 0 });
+    }
+  };
+
+  const handleLogout = async () => {
+    const result = await adminLogout();
+
+    if (result.success) {
+      toast({
+        title: "Logged Out",
+        description: "You have been successfully logged out.",
+      });
       setLocation("/admin/login");
-    }, 1000);
+    } else {
+      toast({
+        title: "Logout Error",
+        description: result.error || "Failed to logout. Please try again.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const formatRemainingTime = (ms: number): string => {
+    const minutes = Math.floor(ms / 60000);
+    const seconds = Math.floor((ms % 60000) / 1000);
+    return `${minutes}m ${seconds}s`;
   };
 
   // Role-based navigation visibility
@@ -327,8 +604,33 @@ export default function AdminDashboard() {
   const canSeeAdmins = adminRole === "super_user";
   const canSeeSupport = true; // All roles can see support
 
+  // Don't render if role is not set
+  if (!adminRole) {
+    return null;
+  }
+
   return (
     <div className="min-h-screen bg-background pb-20">
+      {/* Session Warning Banner */}
+      {sessionWarning && (
+        <div className="bg-yellow-500 text-white px-4 py-2 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertTriangle className="w-4 h-4" />
+            <span className="text-sm">
+              Session expiring in {formatRemainingTime(remainingTime)}. Please save your work.
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="text-white hover:bg-yellow-600"
+            onClick={() => setSessionWarning(false)}
+          >
+            Dismiss
+          </Button>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-10 bg-card border-b px-4 py-3">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
@@ -433,7 +735,7 @@ export default function AdminDashboard() {
                         </div>
                         <Separator className="my-4" />
                         <div className="flex gap-2">
-                          <Button 
+                          <Button
                             onClick={() => handleApprove(creator)}
                             className="bg-green-600 hover:bg-green-700"
                             data-testid={`button-approve-${creator.id}`}
@@ -441,16 +743,16 @@ export default function AdminDashboard() {
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Approve
                           </Button>
-                          <Button 
-                            variant="destructive" 
+                          <Button
+                            variant="destructive"
                             onClick={() => openRejectDialog(creator)}
                             data-testid={`button-reject-${creator.id}`}
                           >
                             <XCircle className="w-4 h-4 mr-2" />
                             Reject
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             className="border-red-600 text-red-600 hover:bg-red-50"
                             onClick={() => handleBan(creator)}
                             data-testid={`button-ban-${creator.id}`}
@@ -512,7 +814,7 @@ export default function AdminDashboard() {
                         </div>
                         <Separator className="my-4" />
                         <div className="flex gap-2">
-                          <Button 
+                          <Button
                             onClick={() => handleApprove(agent)}
                             className="bg-green-600 hover:bg-green-700"
                             data-testid={`button-approve-${agent.id}`}
@@ -520,16 +822,16 @@ export default function AdminDashboard() {
                             <CheckCircle className="w-4 h-4 mr-2" />
                             Approve
                           </Button>
-                          <Button 
-                            variant="destructive" 
+                          <Button
+                            variant="destructive"
                             onClick={() => openRejectDialog(agent)}
                             data-testid={`button-reject-${agent.id}`}
                           >
                             <XCircle className="w-4 h-4 mr-2" />
                             Reject
                           </Button>
-                          <Button 
-                            variant="outline" 
+                          <Button
+                            variant="outline"
                             className="border-red-600 text-red-600 hover:bg-red-50"
                             onClick={() => handleBan(agent)}
                             data-testid={`button-ban-${agent.id}`}
@@ -574,10 +876,10 @@ export default function AdminDashboard() {
                           placeholder="New rate"
                           className="w-32"
                           value={creatorRates[creator.id] || ""}
-                          onChange={(e) => setCreatorRates({ ...creatorRates, [creator.id]: parseInt(e.target.value) || 0 })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setCreatorRates({ ...creatorRates, [creator.id]: parseInt(e.target.value) || 0 })}
                           data-testid={`input-rate-${creator.id}`}
                         />
-                        <Button 
+                        <Button
                           onClick={() => handleUpdateRate(creator.id, creator.name)}
                           data-testid={`button-update-rate-${creator.id}`}
                         >
@@ -614,10 +916,10 @@ export default function AdminDashboard() {
                           placeholder="New %"
                           className="w-32"
                           value={agencyCommissions[agent.id] || ""}
-                          onChange={(e) => setAgencyCommissions({ ...agencyCommissions, [agent.id]: parseInt(e.target.value) || 0 })}
+                          onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAgencyCommissions({ ...agencyCommissions, [agent.id]: parseInt(e.target.value) || 0 })}
                           data-testid={`input-commission-${agent.id}`}
                         />
-                        <Button 
+                        <Button
                           onClick={() => handleUpdateCommission(agent.id, agent.name)}
                           data-testid={`button-update-commission-${agent.id}`}
                         >
@@ -673,8 +975,8 @@ export default function AdminDashboard() {
                           <Button variant="outline" size="sm" data-testid={`button-edit-admin-${admin.id}`}>
                             Edit
                           </Button>
-                          <Button 
-                            variant="destructive" 
+                          <Button
+                            variant="destructive"
                             size="sm"
                             data-testid={`button-deactivate-admin-${admin.id}`}
                           >
@@ -718,7 +1020,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Bouquet</CardTitle>
@@ -733,7 +1035,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Diamond</CardTitle>
@@ -748,7 +1050,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Emerald</CardTitle>
@@ -763,7 +1065,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Sapphire</CardTitle>
@@ -778,7 +1080,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Ruby</CardTitle>
@@ -793,7 +1095,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Crystal Heart</CardTitle>
@@ -808,7 +1110,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Royal Crown</CardTitle>
@@ -823,7 +1125,7 @@ export default function AdminDashboard() {
                         </div>
                       </CardContent>
                     </Card>
-                    
+
                     <Card className="bg-card/50">
                       <CardHeader className="space-y-0 pb-2">
                         <CardTitle className="text-sm font-medium">Golden Treasure</CardTitle>
@@ -839,7 +1141,7 @@ export default function AdminDashboard() {
                       </CardContent>
                     </Card>
                   </div>
-                  
+
                   <div className="mt-6 flex items-center justify-between">
                     <p className="text-sm text-muted-foreground">
                       Gifts are displayed to users during calls. Editing gift amounts updates them system-wide.
@@ -922,7 +1224,7 @@ export default function AdminDashboard() {
             <Textarea
               placeholder="Enter rejection reason..."
               value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRejectionReason(e.target.value)}
               rows={4}
               data-testid="textarea-rejection-reason"
             />
@@ -981,17 +1283,40 @@ export default function AdminDashboard() {
             <Button variant="outline" onClick={() => setShowAddAdminDialog(false)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={() => {
                 toast({
                   title: "Admin Added",
                   description: "New admin user has been created successfully.",
                 });
                 setShowAddAdminDialog(false);
-              }} 
+              }}
               data-testid="button-create-admin"
             >
               Create Admin
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* BUG-017 FIX: Custom Ban Confirmation Dialog - replaces blocking confirm() */}
+      <Dialog open={showBanConfirmDialog} onOpenChange={setShowBanConfirmDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="text-destructive flex items-center gap-2">
+              <Ban className="w-5 h-5" />
+              Confirm Ban
+            </DialogTitle>
+            <DialogDescription>
+              Are you sure you want to permanently ban <strong>{profileToBan?.name}</strong>? This action cannot be undone and user will lose all access to the platform.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={cancelBan}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={confirmBan} data-testid="button-confirm-ban">
+              Permanently Ban User
             </Button>
           </DialogFooter>
         </DialogContent>

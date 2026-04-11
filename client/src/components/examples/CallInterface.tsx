@@ -4,11 +4,10 @@ export default function CallInterfaceExample() {
   return (
     <CallInterface
       creatorName="Sarah Johnson"
+      creatorId="1"
       pricePerMinute={45}
-      currentBalance={450}
-      onEndCall={() => console.log("End call")}
-      onSendGift={() => console.log("Send gift")}
-      onRecharge={() => console.log("Recharge")}
+      callType="audio"
+      onEndCall={() => {/* Example: Handle end call */ }}
     />
   );
 }

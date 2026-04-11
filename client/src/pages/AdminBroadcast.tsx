@@ -18,7 +18,8 @@ export default function AdminBroadcast() {
   });
 
   const handleSend = () => {
-    console.log("Broadcasting message:", { message, recipients });
+    // TODO: Implement actual broadcast API call
+    // For now, this is a placeholder for the broadcast functionality
   };
 
   return (

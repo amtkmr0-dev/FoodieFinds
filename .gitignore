@@ -4,3 +4,60 @@ dist
 server/public
 vite.config.ts.*
 *.tar.gz
+
+# Monorepo
+.turbo
+apps/*/node_modules
+packages/*/node_modules
+
+# Build outputs
+apps/*/dist
+apps/*/build
+apps/*/.next
+packages/*/dist
+
+# Environment
+.env.local
+.env.*.local
+
+# Android
+android/app/build
+android/.gradle
+android/.idea
+android/local.properties
+android/capacitor.settings.gradle
+*.apk
+*.keystore
+
+# iOS
+ios/Pods
+ios/DerivedData
+ios/*.xcworkspace
+ios/*.xcodeproj/project.xcworkspace
+ios/*.xcodeproj/xcuserdata
+
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Coverage directory used by tools like istanbul
+coverage
+*.lcov
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+
+# System files
+Thumbs.db

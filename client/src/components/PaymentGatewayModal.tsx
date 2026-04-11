@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { CreditCard, Shield, Zap } from "lucide-react";
+import { formatCurrency } from "@/lib/currency";
 
 interface PaymentGatewayModalProps {
   isOpen: boolean;
@@ -36,9 +37,9 @@ export function PaymentGatewayModal({ isOpen, amount, onClose, onSelectGateway }
   ];
 
   return (
-    <Dialog open={isOpen} onOpenChange={() => {}}>
-      <DialogContent 
-        className="sm:max-w-md" 
+    <Dialog open={isOpen} onOpenChange={() => { }}>
+      <DialogContent
+        className="sm:max-w-md"
         data-testid="dialog-payment-gateway"
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
@@ -48,10 +49,10 @@ export function PaymentGatewayModal({ isOpen, amount, onClose, onSelectGateway }
             Select Payment Gateway
           </DialogTitle>
           <p className="text-sm text-muted-foreground" data-testid="text-payment-amount">
-            Recharge amount: <span className="font-semibold text-foreground">₹{amount}</span>
+            Recharge amount: <span className="font-semibold text-foreground">{formatCurrency(amount, false)}</span>
           </p>
         </DialogHeader>
-        
+
         <div className="space-y-3 mt-4">
           {gateways.map((gateway) => (
             <Card

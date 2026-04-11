@@ -32,29 +32,31 @@ function CallInterfaceWrapper() {
   const [location, setLocation] = useLocation();
   const params = useParams<{ id: string }>();
   const creatorId = params.id;
-  
+
   const creator = creatorsData.find(c => c.id === creatorId);
-  
+
   useEffect(() => {
     if (!creator) {
       setLocation("/user");
     }
   }, [creator, setLocation]);
-  
+
   if (!creator) {
     return null;
   }
-  
-  const searchParams = new URLSearchParams(location.split('?')[1] || '');
+
+  const searchParams = new URLSearchParams(window.location.search);
   const isRandomMatch = searchParams.get('randomMatch') === 'true';
-  
+  const callType = (searchParams.get('callType') as "audio" | "video") || "audio";
+
   const pricePerMinute = (isRandomMatch && creator.randomMatchEnabled) ? 25 : creator.price;
-  
+
   return (
     <CallInterface
       creatorName={creator.name}
       creatorId={creator.id}
       pricePerMinute={pricePerMinute}
+      callType={callType}
       onEndCall={() => setLocation("/user")}
     />
   );
@@ -77,7 +79,7 @@ function Router() {
       }} />
       <Route path="/signup" component={SignupLogin} />
       <Route path="/creator-signup" component={CreatorSignup} />
-      
+
       {/* Creator & Agent Auth Routes */}
       <Route path="/creator/login" component={CreatorLogin} />
       <Route path="/agent/login" component={AgentLogin} />
@@ -85,7 +87,7 @@ function Router() {
       <Route path="/agent/onboarding" component={CreatorOnboarding} />
       <Route path="/creator/pending-approval" component={PendingApproval} />
       <Route path="/agent/pending-approval" component={PendingApproval} />
-      
+
       {/* User Routes */}
       <Route path="/user" component={UserApp} />
       <Route path="/user/account" component={AccountPage} />
@@ -94,7 +96,7 @@ function Router() {
       <Route path="/user/payment/:amount" component={PaymentGatewayPage} />
       <Route path="/user/support" component={SupportChatPage} />
       <Route path="/user/call/:id" component={CallInterfaceWrapper} />
-      
+
       {/* Creator & Admin Routes */}
       <Route path="/creator" component={CreatorApp} />
       <Route path="/admin/login" component={AdminLogin} />

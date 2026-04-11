@@ -7,7 +7,17 @@ interface WalletContextType {
   balance: number;
   isLoading: boolean;
   refreshBalance: () => void;
-  recharge: (amount: number, paymentMethod: string) => Promise<void>;
+  recharge: (amount: number, paymentMethod: string) => Promise<{
+    success: boolean;
+    wallet?: UserWallet;
+    transaction?: any;
+    bonus?: number;
+    totalAmount?: number;
+    status?: string;
+    transactionId?: string;
+    message?: string;
+    error?: string;
+  }>;
 }
 
 const WalletContext = createContext<WalletContextType | undefined>(undefined);
@@ -27,7 +37,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   // Update local balance when wallet data changes
   useEffect(() => {
     if (walletData) {
-      setBalance(parseFloat(walletData.balance));
+      setBalance(typeof walletData.balance === 'number' ? walletData.balance : parseFloat(walletData.balance));
     }
   }, [walletData]);
 
@@ -36,15 +46,14 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     mutationFn: async ({ amount, paymentMethod }: { amount: number; paymentMethod: string }) => {
       const res = await apiRequest("POST", "/api/wallet/recharge", {
         userId: USER_ID,
-        amount: amount.toString(),
+        amount, // Send as number, not string
         paymentMethod,
-        status: "success",
       });
       return await res.json();
     },
     onSuccess: (data: any) => {
       if (data.wallet) {
-        setBalance(parseFloat(data.wallet.balance));
+        setBalance(typeof data.wallet.balance === 'number' ? data.wallet.balance : parseFloat(data.wallet.balance));
       }
       queryClient.invalidateQueries({ queryKey: ["/api/wallet", USER_ID] });
     },
@@ -55,7 +64,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   };
 
   const recharge = async (amount: number, paymentMethod: string) => {
-    await rechargeMutation.mutateAsync({ amount, paymentMethod });
+    return await rechargeMutation.mutateAsync({ amount, paymentMethod });
   };
 
   return (

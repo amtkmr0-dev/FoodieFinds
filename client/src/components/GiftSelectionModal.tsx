@@ -7,12 +7,16 @@ import { useToast } from "@/hooks/use-toast";
 import { useWallet, USER_ID } from "@/hooks/useWallet";
 import type { GiftConfig } from "@shared/schema";
 import { Heart, Sparkles, Sun, Gem, Crown, Star, Rocket, Trophy } from "lucide-react";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface GiftSelectionModalProps {
   isOpen: boolean;
   onClose: () => void;
   creatorId: string;
   creatorName: string;
+  callDuration?: number;
+  pricePerMinute?: number;
+  onGiftSent?: (giftCost: number) => void;
 }
 
 // Map icon types to actual Lucide icons
@@ -32,9 +36,16 @@ export function GiftSelectionModal({
   onClose,
   creatorId,
   creatorName,
+  callDuration = 0,
+  pricePerMinute = 0,
+  onGiftSent,
 }: GiftSelectionModalProps) {
   const { toast } = useToast();
   const { balance, refreshBalance } = useWallet();
+
+  // Calculate live balance (current balance minus ongoing call cost)
+  const callCost = Math.ceil(callDuration / 60) * pricePerMinute;
+  const liveBalance = balance - callCost;
 
   // Fetch available gifts
   const { data: gifts, isLoading } = useQuery<GiftConfig[]>({
@@ -42,6 +53,7 @@ export function GiftSelectionModal({
     enabled: isOpen,
   });
 
+  // BUG-010 FIX: Standardize on 'amount' field for gift prices
   // Send gift mutation
   const sendGiftMutation = useMutation({
     mutationFn: async (gift: GiftConfig) => {
@@ -49,19 +61,24 @@ export function GiftSelectionModal({
         senderId: USER_ID,
         recipientId: creatorId,
         giftId: gift.id,
-        amount: gift.amount,
+        quantity: 1, // Default to sending 1 gift
       });
       return await res.json();
     },
     onSuccess: (data, gift) => {
+      const giftCost = gift.amount; // BUG-010 FIX: Use consistent 'amount' field
       toast({
         title: "Gift Sent!",
-        description: `You sent ${gift.name} (₹${gift.amount}) to ${creatorName}`,
+        description: `You sent ${gift.name} (₹${giftCost}) to ${creatorName}`,
       });
+      // BUG-008 FIX: Notify parent component about gift cost
+      onGiftSent?.(giftCost);
+      // Invalidate wallet query to fetch updated balance
+      queryClient.invalidateQueries({ queryKey: ["/api/wallet", USER_ID] });
       refreshBalance();
       onClose();
     },
-    onError: (error: any) => {
+    onError: (error: Error | { message?: string }) => {
       toast({
         title: "Failed to Send Gift",
         description: error.message || "Insufficient balance or something went wrong.",
@@ -71,10 +88,11 @@ export function GiftSelectionModal({
   });
 
   const handleSendGift = (gift: GiftConfig) => {
-    if (balance < gift.amount) {
+    const giftPrice = gift.amount; // BUG-010 FIX: Use consistent 'amount' field
+    if (liveBalance < giftPrice) {
       toast({
         title: "Insufficient Balance",
-        description: `You need ₹${gift.amount} to send this gift. Your balance: ₹${balance.toFixed(2)}`,
+        description: `You need ₹${giftPrice} to send this gift. Your balance: ₹${liveBalance.toFixed(2)}`,
         variant: "destructive",
       });
       return;
@@ -88,24 +106,34 @@ export function GiftSelectionModal({
         <DialogHeader>
           <DialogTitle>Send Gift to {creatorName}</DialogTitle>
           <p className="text-sm text-muted-foreground">
-            Your Balance: <span className="font-semibold text-foreground">₹{balance.toFixed(2)}</span>
+            Your Balance: <span className="font-semibold text-foreground">₹{liveBalance.toFixed(2)}</span>
           </p>
         </DialogHeader>
 
         {isLoading ? (
-          <div className="py-8 text-center text-muted-foreground">Loading gifts...</div>
+          // BUG-042 FIX: Show skeleton loading UI instead of text
+          <div className="grid grid-cols-3 gap-3 mt-4" role="status" aria-label="Loading gifts">
+            {[1, 2, 3, 4, 5, 6].map((i) => (
+              <Card key={i} className="p-4 text-center">
+                <div className="mb-2 flex justify-center">
+                  <Skeleton className="w-12 h-12 rounded-full" />
+                </div>
+                <Skeleton className="h-4 w-20 mx-auto mb-1" />
+                <Skeleton className="h-3 w-12 mx-auto" />
+              </Card>
+            ))}
+          </div>
         ) : (
           <div className="grid grid-cols-3 gap-3 mt-4">
             {gifts?.map((gift) => {
               const IconComponent = iconMap[gift.iconType || "Heart"] || Heart;
-              const canAfford = balance >= gift.amount;
-              
+              const canAfford = liveBalance >= gift.amount;
+
               return (
                 <Card
                   key={gift.id}
-                  className={`p-4 text-center cursor-pointer transition-all ${
-                    canAfford ? "hover-elevate active-elevate-2" : "opacity-50 cursor-not-allowed"
-                  }`}
+                  className={`p-4 text-center cursor-pointer transition-all ${canAfford ? "hover-elevate active-elevate-2" : "opacity-50 cursor-not-allowed"
+                    }`}
                   onClick={() => canAfford && handleSendGift(gift)}
                   data-testid={`card-gift-${gift.id}`}
                 >

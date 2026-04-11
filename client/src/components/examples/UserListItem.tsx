@@ -9,8 +9,8 @@ export default function UserListItemExample() {
         phone="+91 98765 43210"
         balance={450}
         lastSeen="2 hours ago"
-        onChat={() => console.log("Chat clicked")}
-        onBlock={() => console.log("Block clicked")}
+        onChat={() => {/* Example: Handle chat click */ }}
+        onBlock={() => {/* Example: Handle block click */ }}
       />
       <UserListItem
         id="2"
@@ -19,8 +19,8 @@ export default function UserListItemExample() {
         balance={125}
         status="blocked"
         lastSeen="1 day ago"
-        onChat={() => console.log("Chat clicked")}
-        onBlock={() => console.log("Block clicked")}
+        onChat={() => {/* Example: Handle chat click */ }}
+        onBlock={() => {/* Example: Handle block click */ }}
       />
     </div>
   );

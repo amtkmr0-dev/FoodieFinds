@@ -10,8 +10,8 @@ export default function CreatorProfileHeaderExample() {
         price={45}
         isOnline={true}
         isFollowing={false}
-        onTalkNow={() => console.log("Talk now clicked")}
-        onFollow={() => console.log("Follow clicked")}
+        onTalkNow={() => {/* Example: Handle talk now click */ }}
+        onFollow={() => {/* Example: Handle follow click */ }}
       />
     </div>
   );

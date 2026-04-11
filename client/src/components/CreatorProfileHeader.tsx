@@ -1,7 +1,8 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Phone, UserPlus, MapPin, Users, Languages, MessageCircle } from "lucide-react";
+import { Phone, UserPlus, MapPin, Users, Languages, MessageCircle, Video, X } from "lucide-react";
+import { getCountryFlag } from "@/lib/config";
 
 interface CreatorProfileHeaderProps {
   name: string;
@@ -12,6 +13,7 @@ interface CreatorProfileHeaderProps {
   languages?: string[];
   isFollowing?: boolean;
   isOnline?: boolean;
+  allowedCallTypes?: "audio" | "video" | "both";
   onTalkNow?: () => void;
   onFollow?: () => void;
   onChat?: () => void;
@@ -26,12 +28,14 @@ export function CreatorProfileHeader({
   languages = ["English", "Hindi"],
   isFollowing = false,
   isOnline = false,
+  allowedCallTypes = "both",
   onTalkNow,
   onFollow,
   onChat,
 }: CreatorProfileHeaderProps) {
-  const initials = name
+  const initials = (name || "")
     .split(" ")
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
@@ -46,17 +50,16 @@ export function CreatorProfileHeader({
             <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
           </Avatar>
           <div
-            className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-3 border-background ${
-              isOnline ? "bg-status-online" : "bg-status-offline"
-            }`}
+            className={`absolute bottom-1 right-1 w-5 h-5 rounded-full border-3 border-background ${isOnline ? "bg-status-online" : "bg-status-offline"
+              }`}
           />
         </div>
 
         <div className="flex-1">
           <div className="flex items-center gap-2 mb-2">
             <h1 className="text-2xl font-bold">{name}</h1>
-            <Badge 
-              variant={isOnline ? "default" : "secondary"} 
+            <Badge
+              variant={isOnline ? "default" : "secondary"}
               className={isOnline ? "bg-status-online hover:bg-status-online" : ""}
               data-testid="badge-status"
             >
@@ -68,9 +71,10 @@ export function CreatorProfileHeader({
               <Languages className="w-3 h-3" />
               {languages.join(", ")}
             </Badge>
+            {/* BUG-046 FIX: Use flag component instead of hardcoded emoji */}
             <Badge variant="secondary" className="gap-1">
               <MapPin className="w-3 h-3" />
-              🇮🇳 {country}
+              {getCountryFlag(country)} {country}
             </Badge>
             <Badge variant="secondary" className="gap-1">
               <Users className="w-3 h-3" />
@@ -89,7 +93,7 @@ export function CreatorProfileHeader({
         <UserPlus className="w-4 h-4 mr-2" />
         {isFollowing ? "Following" : "Follow"}
       </Button>
-      
+
       {!isFollowing && (
         <p className="text-xs text-center text-muted-foreground mb-4">
           Follow to get update when {name.split(" ")[0]} comes online
@@ -111,8 +115,17 @@ export function CreatorProfileHeader({
           disabled={!isOnline}
           data-testid="button-talk-now"
         >
-          <Phone className="w-4 h-4 mr-2" />
-          {isOnline ? `Talk Now - ₹${price}/min` : "Offline"}
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1">
+              <Phone
+                className={`w-4 h-4 ${allowedCallTypes === "video" ? "text-muted-foreground line-through" : ""}`}
+              />
+              <Video
+                className={`w-4 h-4 ${allowedCallTypes === "audio" ? "text-muted-foreground line-through" : ""}`}
+              />
+            </div>
+            <span>{isOnline ? `Connect Now - ₹${price}/min` : "Offline"}</span>
+          </div>
         </Button>
       </div>
       {!isOnline && (

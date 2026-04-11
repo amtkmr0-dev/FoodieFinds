@@ -4,6 +4,19 @@ export default {
   darkMode: ["class"],
   content: ["./client/index.html", "./client/src/**/*.{js,jsx,ts,tsx}"],
   theme: {
+    screens: {
+      'xs': '320px',    // Small phones
+      'sm': '375px',    // Regular phones
+      'md': '768px',    // Tablets
+      'lg': '1024px',   // Desktop
+      'xl': '1280px',   // Large desktop
+      '2xl': '1536px',  // Extra large desktop
+      // Custom mobile breakpoints
+      'mobile-s': '320px',  // Galaxy S5, iPhone 5/SE
+      'mobile-m': '375px',  // iPhone 6/7/8
+      'mobile-l': '414px',  // iPhone 6/7/8 Plus
+      'tablet': '768px',    // iPad
+    },
     extend: {
       borderRadius: {
         lg: ".5rem", /* 8px */

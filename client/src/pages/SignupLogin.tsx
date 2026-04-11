@@ -5,10 +5,19 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Badge } from "@/components/ui/badge";
-import { Phone, Smartphone, CheckCircle2 } from "lucide-react";
+import { Phone, Smartphone, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import { useLocation } from "wouter";
+import {
+  sendOTP,
+  verifyOTP,
+  generateUUID,
+  getStoredUser,
+  isAuthenticated,
+  logout
+} from "@/lib/auth";
+import { validatePhoneNumber, formatPhoneNumber } from "@/lib/config";
 
-type FlowState = "check-device" | "phone-entry" | "otp-verification" | "success";
+type FlowState = "check-device" | "phone-entry" | "otp-verification" | "success" | "error";
 
 export default function SignupLogin() {
   const [, setLocation] = useLocation();
@@ -17,56 +26,112 @@ export default function SignupLogin() {
   const [otp, setOtp] = useState("");
   const [generatedUsername, setGeneratedUsername] = useState("");
   const [deviceRecognized, setDeviceRecognized] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
+  const [sentOtp, setSentOtp] = useState<string | null>(null); // For development only
 
   useEffect(() => {
-    const deviceId = localStorage.getItem("linky_device_id");
-    const savedUsername = localStorage.getItem("linky_username");
-    
-    if (deviceId && savedUsername) {
+    // Check if user is already authenticated
+    if (isAuthenticated()) {
+      setLocation("/user");
+      return;
+    }
+
+    // Check for stored user info
+    const storedUser = getStoredUser();
+    if (storedUser && storedUser.userId) {
       setDeviceRecognized(true);
-      setGeneratedUsername(savedUsername);
+      setGeneratedUsername(storedUser.username || storedUser.userId);
     } else {
       setFlowState("phone-entry");
     }
-  }, []);
+  }, [setLocation]);
 
-  const handleFastLogin = () => {
-    window.location.href = "/user";
+  const handleFastLogin = async () => {
+    // User needs to re-authenticate with OTP for security
+    // Device recognition alone is not sufficient for security
+    setFlowState("phone-entry");
   };
 
-  const handleSendOTP = () => {
-    if (!phone || phone.length < 10) return;
-    console.log("Sending OTP to:", phone);
-    setFlowState("otp-verification");
+  const handleSendOTP = async () => {
+    // BUG-025 FIX: Add phone number format validation
+    if (!phone) {
+      setErrorMessage("Please enter a phone number");
+      return;
+    }
+
+    // Validate phone number format
+    if (!validatePhoneNumber(phone)) {
+      setErrorMessage("Please enter a valid phone number (e.g., +91 98765 43210)");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage("");
+
+    // Format phone number before sending
+    const formattedPhone = formatPhoneNumber(phone);
+    const result = await sendOTP(formattedPhone);
+
+    setIsLoading(false);
+
+    if (result.success) {
+      setSentOtp(result.otp || null); // Store OTP for development testing
+      setFlowState("otp-verification");
+    } else {
+      setErrorMessage(result.error || "Failed to send OTP");
+    }
   };
 
-  const handleVerifyOTP = () => {
-    if (!otp || otp.length !== 6) return;
-    
-    const username = generateUsername();
-    setGeneratedUsername(username);
-    
-    const deviceId = crypto.randomUUID();
-    localStorage.setItem("linky_device_id", deviceId);
-    localStorage.setItem("linky_username", username);
-    localStorage.setItem("linky_phone", phone);
-    
-    setFlowState("success");
-    
-    setTimeout(() => {
-      window.location.href = "/user";
-    }, 2000);
+  const handleVerifyOTP = async () => {
+    if (!otp || otp.length !== 6) {
+      setErrorMessage("Please enter a valid 6-digit OTP");
+      return;
+    }
+
+    setIsLoading(true);
+    setErrorMessage("");
+
+    // Get or generate device ID
+    let deviceId = localStorage.getItem("linky_device_id");
+    if (!deviceId) {
+      deviceId = generateUUID();
+      localStorage.setItem("linky_device_id", deviceId);
+    }
+
+    // BUG-025 FIX: Use formatted phone number
+    const formattedPhone = formatPhoneNumber(phone);
+    const result = await verifyOTP(formattedPhone, otp, deviceId);
+
+    setIsLoading(false);
+
+    if (result.success && result.tokens) {
+      setGeneratedUsername(result.tokens.user.username || result.tokens.user.userId);
+      setFlowState("success");
+
+      setTimeout(() => {
+        setLocation("/user");
+      }, 2000);
+    } else {
+      setErrorMessage(result.error || "OTP verification failed");
+    }
   };
 
-  const generateUsername = (): string => {
-    const adjectives = ["Swift", "Bright", "Cool", "Calm", "Bold", "Quick", "Happy", "Lucky", "Keen", "Wise"];
-    const nouns = ["Hawk", "Star", "Wave", "Tiger", "Eagle", "Fox", "Wolf", "Lion", "Bear", "Raven"];
-    const randomNum = Math.floor(Math.random() * 9999);
-    
-    const adj = adjectives[Math.floor(Math.random() * adjectives.length)];
-    const noun = nouns[Math.floor(Math.random() * nouns.length)];
-    
-    return `${adj}${noun}${randomNum}`;
+  const handleResendOTP = async () => {
+    setIsLoading(true);
+    setErrorMessage("");
+
+    const result = await sendOTP(phone);
+
+    setIsLoading(false);
+
+    if (result.success) {
+      setSentOtp(result.otp || null);
+      // Show success message
+      setErrorMessage("");
+    } else {
+      setErrorMessage(result.error || "Failed to resend OTP");
+    }
   };
 
   const formatPhoneNumber = (value: string) => {
@@ -94,7 +159,7 @@ export default function SignupLogin() {
           </div>
 
           <div className="bg-secondary rounded-lg p-4 mb-6">
-            <div className="text-sm text-muted-foreground mb-1">Logged in as</div>
+            <div className="text-sm text-muted-foreground mb-1">Last logged in as</div>
             <div className="text-lg font-semibold">{generatedUsername}</div>
           </div>
 
@@ -103,7 +168,7 @@ export default function SignupLogin() {
             onClick={handleFastLogin}
             data-testid="button-fast-login"
           >
-            Continue to App
+            Continue with OTP
           </Button>
 
           <Button
@@ -163,11 +228,19 @@ export default function SignupLogin() {
           <Button
             className="w-full"
             onClick={handleSendOTP}
-            disabled={!phone || phone.length < 10}
+            disabled={!phone || phone.length < 10 || isLoading}
             data-testid="button-send-otp"
           >
+            {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             Send OTP
           </Button>
+
+          {errorMessage && (
+            <div className="mt-4 p-3 bg-destructive/10 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">{errorMessage}</p>
+            </div>
+          )}
 
           <div className="mt-6 p-4 bg-primary/5 rounded-lg">
             <div className="flex items-start gap-2 text-sm">
@@ -214,19 +287,30 @@ export default function SignupLogin() {
             </div>
           </div>
 
+          {errorMessage && (
+            <div className="mb-4 p-3 bg-destructive/10 rounded-lg flex items-start gap-2">
+              <AlertCircle className="w-4 h-4 text-destructive mt-0.5 flex-shrink-0" />
+              <p className="text-sm text-destructive">{errorMessage}</p>
+            </div>
+          )}
+
           <Button
             className="w-full mb-3"
             onClick={handleVerifyOTP}
-            disabled={!otp || otp.length !== 6}
+            disabled={!otp || otp.length !== 6 || isLoading}
             data-testid="button-verify-otp"
           >
+            {isLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : null}
             Verify & Continue
           </Button>
 
           <Button
             variant="ghost"
             className="w-full"
-            onClick={() => setFlowState("phone-entry")}
+            onClick={() => {
+              setFlowState("phone-entry");
+              setErrorMessage("");
+            }}
             data-testid="button-back"
           >
             Change Number
@@ -234,13 +318,23 @@ export default function SignupLogin() {
 
           <div className="text-center mt-4">
             <button
-              onClick={() => console.log("Resend OTP")}
-              className="text-sm text-primary hover:underline"
+              onClick={handleResendOTP}
+              disabled={isLoading}
+              className="text-sm text-primary hover:underline disabled:opacity-50"
               data-testid="button-resend-otp"
             >
               Resend OTP
             </button>
           </div>
+
+          {/* Development only - show OTP for testing */}
+          {sentOtp && process.env.NODE_ENV === 'development' && (
+            <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
+              <p className="text-xs text-yellow-800 dark:text-yellow-200">
+                <strong>Development Mode:</strong> OTP is {sentOtp}
+              </p>
+            </div>
+          )}
         </Card>
       </div>
     );

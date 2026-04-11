@@ -5,8 +5,8 @@ export default function IncomingCallModalExample() {
     <IncomingCallModal
       callerName="System Call"
       pricePerMinute={45}
-      onAccept={() => console.log("Call accepted")}
-      onReject={() => console.log("Call rejected")}
+      onAccept={() => {/* Example: Handle call acceptance */ }}
+      onReject={() => {/* Example: Handle call rejection */ }}
     />
   );
 }

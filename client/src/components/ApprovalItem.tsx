@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +16,7 @@ interface ApprovalItemProps {
   onReject?: () => void;
 }
 
-export function ApprovalItem({
+export const ApprovalItem = memo(function ApprovalItem({
   creatorName,
   creatorImage,
   type,
@@ -25,8 +26,9 @@ export function ApprovalItem({
   onApprove,
   onReject,
 }: ApprovalItemProps) {
-  const initials = creatorName
+  const initials = (creatorName || "")
     .split(" ")
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
@@ -40,10 +42,10 @@ export function ApprovalItem({
   };
 
   const statusColors = {
-    pending: "warning",
-    approved: "success",
-    rejected: "destructive",
-  } as const;
+    pending: "outline" as const,
+    approved: "default" as const,
+    rejected: "destructive" as const,
+  };
 
   return (
     <div className="flex items-center gap-4 p-4 border-b hover-elevate" data-testid="item-approval">
@@ -59,7 +61,7 @@ export function ApprovalItem({
             {typeLabels[type]}
           </Badge>
           <Badge
-            variant={statusColors[status] === "warning" ? "outline" : statusColors[status] as any}
+            variant={statusColors[status]}
             className="text-xs"
           >
             {status}
@@ -93,4 +95,4 @@ export function ApprovalItem({
       )}
     </div>
   );
-}
+});

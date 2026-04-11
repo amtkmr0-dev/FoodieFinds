@@ -42,14 +42,24 @@ export default function AdminLogin() {
       return;
     }
 
-    // Check if admin exists
-    const isRegistered = localStorage.getItem("admin_registered");
-    
-    if (isRegistered) {
-      const adminRole = localStorage.getItem("admin_role") || "admin";
+    // Validate against hardcoded credentials
+    const validMobile = "9717629692";
+    const validOtp = "123456";
+
+    // Clean mobile number (remove spaces, dashes, etc.)
+    const cleanMobileNumber = mobileNumber.replace(/\s/g, "").replace(/-/g, "");
+
+    // Debug logging removed for production - use proper logging service if needed
+
+    if (cleanMobileNumber === validMobile && otp === validOtp) {
+      // Set admin registration
+      localStorage.setItem("admin_registered", "true");
+      localStorage.setItem("admin_role", "admin");
+      localStorage.setItem("admin_mobile", cleanMobileNumber);
+
       toast({
         title: "Login Successful",
-        description: `Welcome back, ${adminRole}!`,
+        description: "Welcome back, Admin!",
       });
       setTimeout(() => {
         setLocation("/admin/dashboard");
@@ -57,7 +67,7 @@ export default function AdminLogin() {
     } else {
       toast({
         title: "Access Denied",
-        description: "This mobile number is not authorized as an admin. Contact Super User for access.",
+        description: "Invalid mobile number or OTP. Please try again.",
         variant: "destructive",
       });
     }
@@ -85,8 +95,8 @@ export default function AdminLogin() {
               Admin Login
             </CardTitle>
             <CardDescription>
-              {step === "mobile" 
-                ? "Enter your registered mobile number" 
+              {step === "mobile"
+                ? "Enter your registered mobile number"
                 : "Enter the OTP sent to your mobile"}
             </CardDescription>
           </CardHeader>
@@ -112,8 +122,8 @@ export default function AdminLogin() {
                     />
                   </div>
                 </div>
-                <Button 
-                  className="w-full" 
+                <Button
+                  className="w-full"
                   onClick={handleSendOTP}
                   data-testid="button-send-otp"
                 >
@@ -135,15 +145,15 @@ export default function AdminLogin() {
                   />
                 </div>
                 <div className="flex gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     onClick={() => setStep("mobile")}
                     data-testid="button-change-number"
                   >
                     Change Number
                   </Button>
-                  <Button 
-                    className="flex-1" 
+                  <Button
+                    className="flex-1"
                     onClick={handleVerifyOTP}
                     data-testid="button-verify-otp"
                   >

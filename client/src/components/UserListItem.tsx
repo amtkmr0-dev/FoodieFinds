@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,7 +16,7 @@ interface UserListItemProps {
   onBlock?: () => void;
 }
 
-export function UserListItem({
+export const UserListItem = memo(function UserListItem({
   name,
   phone,
   image,
@@ -25,8 +26,9 @@ export function UserListItem({
   onChat,
   onBlock,
 }: UserListItemProps) {
-  const initials = name
+  const initials = (name || "")
     .split(" ")
+    .filter((n) => n.length > 0)
     .map((n) => n[0])
     .join("")
     .toUpperCase()
@@ -38,7 +40,7 @@ export function UserListItem({
         <AvatarImage src={image} alt={name} />
         <AvatarFallback>{initials}</AvatarFallback>
       </Avatar>
-      
+
       <div className="flex-1 min-w-0">
         <div className="flex items-center gap-2 mb-1">
           <h4 className="font-semibold truncate">{name}</h4>
@@ -76,4 +78,4 @@ export function UserListItem({
       </div>
     </div>
   );
-}
+});

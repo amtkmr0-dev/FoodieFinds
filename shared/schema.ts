@@ -23,28 +23,28 @@ export const creatorAgentProfiles = pgTable("creator_agent_profiles", {
   mobileNumber: text("mobile_number").notNull().unique(),
   email: text("email"),
   name: text("name").notNull(),
-  
+
   // KYC Details
   bankAccountNumber: text("bank_account_number"),
   bankIfscCode: text("bank_ifsc_code"),
   bankAccountName: text("bank_account_name"),
   aadharNumber: text("aadhar_number"),
   panNumber: text("pan_number"),
-  
+
   // Referral
   referralCode: text("referral_code").unique(),
   referredBy: text("referred_by"),
-  
+
   // Approval Status
   approvalStatus: text("approval_status").notNull().default("pending"), // "pending" | "approved" | "rejected" | "banned"
   rejectionReason: text("rejection_reason"),
-  
+
   // Language
   language: text("language").default("en"),
-  
+
   // Random Match Settings
   randomMatchEnabled: text("random_match_enabled").notNull().default("false"), // "true" | "false"
-  
+
   // Timestamps
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at").defaultNow().notNull(),
@@ -194,6 +194,7 @@ export const callTransactions = pgTable("call_transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull(), // User who made the call
   creatorId: text("creator_id").notNull(), // Creator who received the call
+  callType: text("call_type").notNull().default("audio"), // "audio" or "video"
   durationSeconds: integer("duration_seconds").notNull(), // Call duration in seconds
   pricePerMinute: integer("price_per_minute").notNull(), // Rate at the time of call
   totalCost: decimal("total_cost", { precision: 10, scale: 2 }).notNull(), // Total cost charged
@@ -207,3 +208,60 @@ export const insertCallTransactionSchema = createInsertSchema(callTransactions).
 
 export type InsertCallTransaction = z.infer<typeof insertCallTransactionSchema>;
 export type CallTransaction = typeof callTransactions.$inferSelect;
+
+// Detailed Call Logs for performance tracking
+export const callLogs = pgTable("call_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  callerId: text("caller_id").notNull(), // User ID
+  receiverId: text("receiver_id").notNull(), // Creator ID
+  callType: text("call_type").notNull().default("audio"), // "audio" or "video"
+  status: text("status").notNull(), // "initiated", "answered", "rejected", "missed", "cancelled_by_user_early", "completed"
+  durationSeconds: integer("duration_seconds").default(0),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCallLogSchema = createInsertSchema(callLogs).omit({
+  id: true,
+});
+
+export type InsertCallLog = z.infer<typeof insertCallLogSchema>;
+export type CallLog = typeof callLogs.$inferSelect;
+
+// Creator Performance Metrics table
+export const creatorPerformance = pgTable("creator_performance", {
+  creatorId: varchar("creator_id").primaryKey(), // References creatorAgentProfiles.id
+  performanceScore: decimal("performance_score", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  totalCalls: integer("total_calls").notNull().default(0),
+  answeredCalls: integer("answered_calls").notNull().default(0),
+  rejectedCalls: integer("rejected_calls").notNull().default(0),
+  missedCalls: integer("missed_calls").notNull().default(0),
+  avgCallDurationSeconds: integer("avg_call_duration_seconds").notNull().default(0),
+  userRetentionRate: decimal("user_retention_rate", { precision: 5, scale: 2 }).notNull().default("0.00"),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCreatorPerformanceSchema = createInsertSchema(creatorPerformance).omit({
+  updatedAt: true,
+});
+
+export type InsertCreatorPerformance = z.infer<typeof insertCreatorPerformanceSchema>;
+export type CreatorPerformance = typeof creatorPerformance.$inferSelect;
+
+// Creator Rewards table
+export const creatorRewards = pgTable("creator_rewards", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  creatorId: varchar("creator_id").notNull(), // References creatorAgentProfiles.id
+  rewardType: text("reward_type").notNull(), // "daily_top_performer", "weekly_top_performer", "referral_bonus"
+  amount: decimal("amount", { precision: 10, scale: 2 }).notNull(),
+  status: text("status").notNull().default("distributed"), // "pending", "distributed"
+  distributedAt: timestamp("distributed_at").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+});
+
+export const insertCreatorRewardSchema = createInsertSchema(creatorRewards).omit({
+  id: true,
+  createdAt: true,
+});
+
+export type InsertCreatorReward = z.infer<typeof insertCreatorRewardSchema>;
+export type CreatorReward = typeof creatorRewards.$inferSelect;

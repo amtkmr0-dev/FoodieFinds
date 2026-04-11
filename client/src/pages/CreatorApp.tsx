@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { useToast } from "@/hooks/use-toast";
+import { PerformanceMeter } from "@/components/creator/PerformanceMeter";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
@@ -14,10 +15,13 @@ import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
+  DialogFooter,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
+import { IncomingCallModal } from "@/components/IncomingCallModal";
 import {
   Wallet,
   Users,
@@ -60,6 +64,10 @@ export default function CreatorApp() {
   const [isLive, setIsLive] = useState(false);
   const [selectedTab, setSelectedTab] = useState("dashboard");
   const [selectedFilter, setSelectedFilter] = useState<string>("none");
+  const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const [incomingCallType, setIncomingCallType] = useState<"audio" | "video">("audio");
+  const [incomingCallerName, setIncomingCallerName] = useState("");
+  const [allowedCallTypes, setAllowedCallTypes] = useState<"audio" | "video" | "both">("both");
   const { toast } = useToast();
 
   // Profile state
@@ -97,6 +105,16 @@ export default function CreatorApp() {
     pkWins: 23,
     pkLosses: 15,
     rank: 47,
+  };
+
+  // Performance metrics for the meter
+  const performanceMetrics = {
+    score: 78.5, // 0-100 score
+    metrics: {
+      avgCallDuration: 720, // 12 minutes in seconds
+      userRetention: 68.3, // percentage
+      callAcceptanceRate: 82.5, // percentage
+    },
   };
 
   const agencyStats = {
@@ -186,7 +204,7 @@ export default function CreatorApp() {
 
   const handleWithdraw = () => {
     const amount = parseFloat(withdrawalAmount);
-    
+
     // Validate bank verification
     if (!bankData.verified) {
       toast({
@@ -353,6 +371,12 @@ export default function CreatorApp() {
               </CardContent>
             </Card>
 
+            {/* Performance Meter */}
+            <PerformanceMeter
+              score={performanceMetrics.score}
+              metrics={performanceMetrics.metrics}
+            />
+
             {/* Quick Actions */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <Card className="hover-elevate cursor-pointer" data-testid="card-video-call">
@@ -362,7 +386,7 @@ export default function CreatorApp() {
                   <p className="text-sm text-muted-foreground">Start earning</p>
                 </CardContent>
               </Card>
-              
+
               <Card className="hover-elevate cursor-pointer" data-testid="card-voice-call">
                 <CardContent className="pt-6 text-center">
                   <Mic className="w-8 h-8 mx-auto mb-3 text-primary" />
@@ -387,6 +411,37 @@ export default function CreatorApp() {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Test Incoming Call Button (for development/testing) */}
+            <Card className="bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-purple-500/20">
+              <CardContent className="pt-6">
+                <h3 className="font-semibold mb-3 text-center">Test Incoming Call</h3>
+                <div className="flex gap-3 justify-center">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIncomingCallType("audio");
+                      setIncomingCallerName("Test User (Audio)");
+                      setShowIncomingCall(true);
+                    }}
+                  >
+                    <Phone className="w-4 h-4 mr-2" />
+                    Simulate Audio Call
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setIncomingCallType("video");
+                      setIncomingCallerName("Test User (Video)");
+                      setShowIncomingCall(true);
+                    }}
+                  >
+                    <Video className="w-4 h-4 mr-2" />
+                    Simulate Video Call
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
 
             {/* Recent Activity */}
             <Card>
@@ -448,7 +503,7 @@ export default function CreatorApp() {
                         </div>
                         <Badge variant="secondary">{creatorStats.liveViewers} viewers</Badge>
                       </div>
-                      
+
                       <div className="grid grid-cols-3 gap-4 mb-4">
                         <div className="text-center">
                           <p className="text-2xl font-bold">0</p>
@@ -473,7 +528,7 @@ export default function CreatorApp() {
                           <Mic className="w-4 h-4 mr-2" />
                           Microphone
                         </Button>
-                        
+
                         <Dialog>
                           <DialogTrigger asChild>
                             <Button variant="outline" size="sm" className="flex-1" data-testid="button-filters">
@@ -492,11 +547,10 @@ export default function CreatorApp() {
                               {beautyFilters.map((filter) => (
                                 <div
                                   key={filter.id}
-                                  className={`p-4 rounded-lg border cursor-pointer transition-all ${
-                                    selectedFilter === filter.id
-                                      ? "bg-primary/10 border-primary"
-                                      : "bg-secondary border-transparent hover-elevate"
-                                  }`}
+                                  className={`p-4 rounded-lg border cursor-pointer transition-all ${selectedFilter === filter.id
+                                    ? "bg-primary/10 border-primary"
+                                    : "bg-secondary border-transparent hover-elevate"
+                                    }`}
                                   onClick={() => setSelectedFilter(filter.id)}
                                   data-testid={`filter-${filter.id}`}
                                 >
@@ -594,11 +648,10 @@ export default function CreatorApp() {
                     {pkBattleHistory.map((battle) => (
                       <div
                         key={battle.id}
-                        className={`p-4 rounded-lg border ${
-                          battle.result === "win"
-                            ? "bg-green-500/10 border-green-500/20"
-                            : "bg-red-500/10 border-red-500/20"
-                        }`}
+                        className={`p-4 rounded-lg border ${battle.result === "win"
+                          ? "bg-green-500/10 border-green-500/20"
+                          : "bg-red-500/10 border-red-500/20"
+                          }`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <div className="flex items-center gap-2">
@@ -643,11 +696,10 @@ export default function CreatorApp() {
                 {topCreators.map((creator) => (
                   <div
                     key={creator.id}
-                    className={`flex items-center justify-between p-4 rounded-lg ${
-                      creator.rank <= 3
-                        ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
-                        : "bg-secondary"
-                    }`}
+                    className={`flex items-center justify-between p-4 rounded-lg ${creator.rank <= 3
+                      ? "bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/20"
+                      : "bg-secondary"
+                      }`}
                   >
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-full bg-primary/20 flex items-center justify-center">
@@ -988,21 +1040,21 @@ export default function CreatorApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="profile-name">Full Name</Label>
-                    <Input 
-                      id="profile-name" 
+                    <Input
+                      id="profile-name"
                       value={profileData.name}
                       onChange={(e) => setProfileData({ ...profileData, name: e.target.value })}
-                      data-testid="input-profile-name" 
+                      data-testid="input-profile-name"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="profile-email">Email</Label>
-                    <Input 
-                      id="profile-email" 
-                      type="email" 
+                    <Input
+                      id="profile-email"
+                      type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData({ ...profileData, email: e.target.value })}
-                      data-testid="input-profile-email" 
+                      data-testid="input-profile-email"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1030,29 +1082,29 @@ export default function CreatorApp() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="bank-account-name">Account Holder Name</Label>
-                    <Input 
-                      id="bank-account-name" 
+                    <Input
+                      id="bank-account-name"
                       value={bankData.accountName}
                       onChange={(e) => setBankData({ ...bankData, accountName: e.target.value })}
-                      data-testid="input-bank-name" 
+                      data-testid="input-bank-name"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bank-account-number">Account Number</Label>
-                    <Input 
-                      id="bank-account-number" 
+                    <Input
+                      id="bank-account-number"
                       value={bankData.accountNumber}
                       onChange={(e) => setBankData({ ...bankData, accountNumber: e.target.value })}
-                      data-testid="input-bank-number" 
+                      data-testid="input-bank-number"
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="bank-ifsc">IFSC Code</Label>
-                    <Input 
-                      id="bank-ifsc" 
+                    <Input
+                      id="bank-ifsc"
                       value={bankData.ifscCode}
                       onChange={(e) => setBankData({ ...bankData, ifscCode: e.target.value })}
-                      data-testid="input-bank-ifsc" 
+                      data-testid="input-bank-ifsc"
                     />
                   </div>
                   <div className="space-y-2">
@@ -1087,7 +1139,7 @@ export default function CreatorApp() {
                 </div>
                 <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
                   <p className="text-sm">
-                    <strong>Note:</strong> KYC documents are verified and cannot be edited. 
+                    <strong>Note:</strong> KYC documents are verified and cannot be edited.
                     Contact support if you need to update these details.
                   </p>
                 </div>
@@ -1125,12 +1177,12 @@ export default function CreatorApp() {
                   </div>
                 </div>
                 <div className="flex gap-3">
-                  <Input 
-                    placeholder="Enter amount (min ₹500)" 
-                    type="number" 
+                  <Input
+                    placeholder="Enter amount (min ₹500)"
+                    type="number"
                     value={withdrawalAmount}
                     onChange={(e) => setWithdrawalAmount(e.target.value)}
-                    data-testid="input-withdrawal-amount" 
+                    data-testid="input-withdrawal-amount"
                   />
                   <Button onClick={handleWithdraw} data-testid="button-withdraw">
                     <Download className="w-4 h-4 mr-2" />
@@ -1194,13 +1246,47 @@ export default function CreatorApp() {
                   />
                 </div>
                 {randomMatchEnabled && (
-                  <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
-                    <p className="text-sm">
-                      <strong>Note:</strong> When enabled, users clicking the Random Match button will be 
-                      matched with you at a fixed rate of ₹25/min. This helps increase your visibility 
-                      and earnings.
-                    </p>
-                  </div>
+                  <>
+                    <div className="bg-primary/10 border border-primary/20 rounded-lg p-4">
+                      <p className="text-sm">
+                        <strong>Note:</strong> When enabled, users clicking the Random Match button will be
+                        matched with you at a fixed rate of ₹25/min. This helps increase your visibility
+                        and earnings.
+                      </p>
+                    </div>
+                    <div className="space-y-3">
+                      <Label>Allowed Call Types</Label>
+                      <div className="grid grid-cols-3 gap-3">
+                        <Button
+                          variant={allowedCallTypes === "audio" ? "default" : "outline"}
+                          className="h-24 flex flex-col gap-2"
+                          onClick={() => setAllowedCallTypes("audio")}
+                        >
+                          <Phone className="w-6 h-6" />
+                          <span className="text-sm font-medium">Audio</span>
+                        </Button>
+                        <Button
+                          variant={allowedCallTypes === "video" ? "default" : "outline"}
+                          className="h-24 flex flex-col gap-2"
+                          onClick={() => setAllowedCallTypes("video")}
+                        >
+                          <Video className="w-6 h-6" />
+                          <span className="text-sm font-medium">Video</span>
+                        </Button>
+                        <Button
+                          variant={allowedCallTypes === "both" ? "default" : "outline"}
+                          className="h-24 flex flex-col gap-2"
+                          onClick={() => setAllowedCallTypes("both")}
+                        >
+                          <Sparkles className="w-6 h-6" />
+                          <span className="text-sm font-medium">Both</span>
+                        </Button>
+                      </div>
+                      <p className="text-xs text-muted-foreground">
+                        Select which call types you want to receive. "Both" allows users to choose either audio or video.
+                      </p>
+                    </div>
+                  </>
                 )}
               </CardContent>
             </Card>
@@ -1232,11 +1318,11 @@ export default function CreatorApp() {
                     <div>
                       <Label>Referral Link</Label>
                       <div className="flex gap-2 mt-2">
-                        <Input 
-                          value="https://talkin.app/creator/login?ref=SARAH2024" 
-                          readOnly 
-                          className="text-sm" 
-                          data-testid="input-referral-link" 
+                        <Input
+                          value="https://talkin.app/creator/login?ref=SARAH2024"
+                          readOnly
+                          className="text-sm"
+                          data-testid="input-referral-link"
                         />
                         <Button variant="outline" size="icon" data-testid="button-share-referral">
                           <Share className="w-4 h-4" />
@@ -1351,6 +1437,32 @@ export default function CreatorApp() {
           </Button>
         </div>
       </nav>
+
+      {/* Incoming Call Modal for Creators */}
+      {showIncomingCall && (
+        <IncomingCallModal
+          callerName={incomingCallerName}
+          pricePerMinute={25}
+          callType={incomingCallType}
+          isOutgoing={false}
+          showRejectConfirmation={true}
+          onAccept={() => {
+            setShowIncomingCall(false);
+            toast({
+              title: "Call Accepted",
+              description: `You accepted the ${incomingCallType} call from ${incomingCallerName}`,
+            });
+          }}
+          onReject={() => {
+            setShowIncomingCall(false);
+            toast({
+              title: "Call Rejected",
+              description: `You rejected the ${incomingCallType} call from ${incomingCallerName}`,
+              variant: "destructive",
+            });
+          }}
+        />
+      )}
     </div>
   );
 }

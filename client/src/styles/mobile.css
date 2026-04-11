@@ -1,0 +1,122 @@
+/* Mobile-specific optimizations for Android app */
+
+/* Touch-friendly tap targets */
+@media (max-width: 768px) {
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Optimize font sizes for readability on small screens */
+  .mobile-optimized {
+    font-size: 16px;
+    /* Prevents zoom on iOS */
+    line-height: 1.5;
+  }
+
+  /* Better button spacing for touch */
+  .mobile-button-group>* {
+    margin: 8px;
+  }
+
+  /* Optimize for different Android screen densities */
+  @media (max-width: 320px) {
+
+    /* Galaxy S5, iPhone 5/SE */
+    .density-compact {
+      font-size: 14px;
+      padding: 8px 12px;
+    }
+  }
+
+  @media (min-width: 321px) and (max-width: 375px) {
+
+    /* Standard mobile */
+    .density-standard {
+      font-size: 16px;
+      padding: 10px 16px;
+    }
+  }
+
+  @media (min-width: 376px) and (max-width: 414px) {
+
+    /* iPhone 6/7/8 Plus, large phones */
+    .density-comfortable {
+      font-size: 17px;
+      padding: 12px 18px;
+    }
+  }
+}
+
+/* Safe area adjustments for modern Android devices */
+@supports (padding: max(0px)) {
+  .safe-area-top {
+    padding-top: max(12px, env(safe-area-inset-top));
+  }
+
+  .safe-area-bottom {
+    padding-bottom: max(12px, env(safe-area-inset-bottom));
+  }
+
+  .safe-area-left {
+    padding-left: max(12px, env(safe-area-inset-left));
+  }
+
+  .safe-area-right {
+    padding-right: max(12px, env(safe-area-inset-right));
+  }
+}
+
+/* Improve scroll performance on mobile */
+.smooth-scroll {
+  -webkit-overflow-scrolling: touch;
+  scroll-behavior: smooth;
+}
+
+/* Better tap feedback */
+.tap-highlight {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* Optimize images for different screen densities */
+.responsive-image {
+  max-width: 100%;
+  height: auto;
+  object-fit: cover;
+}
+
+@media (-webkit-min-device-pixel-ratio: 2),
+(min-resolution: 192dpi) {
+
+  /* High DPI displays */
+  .high-dpi-optimized {
+    image-rendering: -webkit-optimize-contrast;
+    image-rendering: crisp-edges;
+  }
+}
+
+/* Modal and overlay optimizations for mobile */
+.mobile-modal {
+  max-height: 90vh;
+  max-width: calc(100vw - 32px);
+  margin: 16px;
+}
+
+/* Accessibility improvements for mobile */
+@media (prefers-reduced-motion: reduce) {
+  .respect-motion-preference {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* Dark mode optimizations for OLED screens */
+@media (prefers-color-scheme: dark) {
+  .oled-optimized {
+    background-color: #000000;
+    /* True black for OLED */
+  }
+}

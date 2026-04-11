@@ -1,161 +1,101 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { CreatorProfileHeader } from "@/components/CreatorProfileHeader";
 import { PrivacyWarningModal } from "@/components/PrivacyWarningModal";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
-import { ChevronLeft, Play } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
+import { ChevronLeft, Play, Phone, Video, AlertCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/hooks/useWallet";
-
-// Mock creator data - in real app this would come from API
-const creatorsData = [
-  {
-    id: "1",
-    name: "Sarah Johnson",
-    price: 45,
-    country: "India",
-    followers: 1250,
-    languages: ["English", "Hindi", "Tamil"],
-    isOnline: true,
-    aboutMe: "Friendly conversationalist who loves discussing life experiences and offering advice on personal growth.",
-    talksAbout: ["Life coaching", "Relationships", "Career guidance", "Mental wellness"],
-    hobbies: ["Reading", "Yoga", "Traveling", "Cooking"],
-    foodPreferences: ["Vegetarian", "Italian cuisine", "Indian sweets"],
-    sportsInterests: ["Cricket", "Badminton", "Running"],
-  },
-  {
-    id: "2",
-    name: "Rahul Verma",
-    price: 38,
-    country: "India",
-    followers: 890,
-    languages: ["Hindi", "English"],
-    isOnline: false,
-    aboutMe: "Tech enthusiast and startup mentor with 10 years of experience in software development.",
-    talksAbout: ["Technology", "Startups", "Programming", "Career advice"],
-    hobbies: ["Gaming", "Photography", "Blogging"],
-    foodPreferences: ["Non-vegetarian", "North Indian", "Chinese"],
-    sportsInterests: ["Football", "Chess", "Table tennis"],
-  },
-  {
-    id: "3",
-    name: "Priya Sharma",
-    price: 52,
-    country: "India",
-    followers: 2100,
-    languages: ["English", "Hindi", "Marathi"],
-    isOnline: true,
-    aboutMe: "Business consultant and motivational speaker passionate about empowering entrepreneurs.",
-    talksAbout: ["Business strategy", "Entrepreneurship", "Marketing", "Leadership"],
-    hobbies: ["Public speaking", "Writing", "Gardening"],
-    foodPreferences: ["Vegetarian", "South Indian", "Continental"],
-    sportsInterests: ["Tennis", "Swimming", "Cycling"],
-  },
-  {
-    id: "4",
-    name: "Amit Patel",
-    price: 40,
-    country: "India",
-    followers: 1500,
-    languages: ["Gujarati", "Hindi", "English"],
-    isOnline: true,
-    aboutMe: "Finance expert helping people make smart investment decisions and achieve financial freedom.",
-    talksAbout: ["Investment", "Stock market", "Personal finance", "Real estate"],
-    hobbies: ["Reading", "Playing guitar", "Hiking"],
-    foodPreferences: ["Vegetarian", "Gujarati cuisine", "Street food"],
-    sportsInterests: ["Cricket", "Volleyball", "Jogging"],
-  },
-  {
-    id: "5",
-    name: "Neha Kapoor",
-    price: 48,
-    country: "India",
-    followers: 1780,
-    languages: ["English", "Hindi", "Punjabi"],
-    isOnline: true,
-    aboutMe: "Fashion designer and lifestyle blogger who loves sharing creative ideas and style tips.",
-    talksAbout: ["Fashion", "Lifestyle", "Beauty", "Social media"],
-    hobbies: ["Sketching", "Shopping", "Dancing", "Photography"],
-    foodPreferences: ["Vegetarian", "Punjabi cuisine", "Fusion food"],
-    sportsInterests: ["Zumba", "Yoga", "Badminton"],
-  },
-  {
-    id: "6",
-    name: "Vikram Singh",
-    price: 35,
-    country: "India",
-    followers: 750,
-    languages: ["Hindi", "English"],
-    isOnline: false,
-    aboutMe: "Fitness trainer and nutrition coach dedicated to helping people achieve their health goals.",
-    talksAbout: ["Fitness", "Nutrition", "Weight loss", "Muscle building"],
-    hobbies: ["Gym training", "Sports", "Cooking healthy meals"],
-    foodPreferences: ["High protein", "Salads", "Smoothies"],
-    sportsInterests: ["Bodybuilding", "Boxing", "Running", "Basketball"],
-  },
-  {
-    id: "7",
-    name: "Anjali Mehta",
-    price: 42,
-    country: "India",
-    followers: 1320,
-    languages: ["English", "Hindi", "Bengali"],
-    isOnline: true,
-    aboutMe: "Psychologist and counselor specializing in stress management and emotional well-being.",
-    talksAbout: ["Mental health", "Stress management", "Relationships", "Self-care"],
-    hobbies: ["Meditation", "Reading", "Painting", "Listening to music"],
-    foodPreferences: ["Vegetarian", "Bengali cuisine", "Organic food"],
-    sportsInterests: ["Walking", "Swimming", "Yoga"],
-  },
-  {
-    id: "8",
-    name: "Karan Malhotra",
-    price: 50,
-    country: "India",
-    followers: 1950,
-    languages: ["Hindi", "English", "Urdu"],
-    isOnline: true,
-    aboutMe: "Digital marketing expert helping brands grow their online presence and reach their audience.",
-    talksAbout: ["Digital marketing", "SEO", "Content creation", "Brand building"],
-    hobbies: ["Traveling", "Photography", "Blogging", "Music"],
-    foodPreferences: ["Non-vegetarian", "Mughlai", "Italian"],
-    sportsInterests: ["Cricket", "Football", "Snooker"],
-  },
-  {
-    id: "9",
-    name: "Kavya Iyer",
-    price: 46,
-    country: "India",
-    followers: 1650,
-    languages: ["English", "Tamil", "Hindi"],
-    isOnline: false,
-    aboutMe: "Classical dancer and arts enthusiast sharing insights on Indian culture and performing arts.",
-    talksAbout: ["Dance", "Indian culture", "Arts", "Music", "Traditions"],
-    hobbies: ["Dancing", "Teaching", "Traveling", "Cooking"],
-    foodPreferences: ["Vegetarian", "South Indian", "Traditional sweets"],
-    sportsInterests: ["Badminton", "Swimming", "Yoga"],
-  },
-];
+import { creatorsData, type Creator } from "@/lib/creatorsData";
 
 export default function CreatorProfile() {
   const [, setLocation] = useLocation();
   const { id: creatorId } = useParams<{ id: string }>();
-  const creator = creatorsData.find(c => c.id === creatorId) || creatorsData[0];
-  
+  const [creator, setCreator] = useState<Creator | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
+
+  // BUG-014 FIX: Import from shared creatorsData instead of duplicating
+  // BUG-015 FIX: Proper error handling for non-existent creators
+  useEffect(() => {
+    const foundCreator = creatorsData.find(c => c.id === creatorId);
+    if (foundCreator) {
+      setCreator(foundCreator);
+      setNotFound(false);
+    } else {
+      setNotFound(true);
+    }
+    setIsLoading(false);
+  }, [creatorId]);
+
+  // BUG-031 FIX: Use state management with localStorage persistence instead of direct manipulation
   const [isFollowing, setIsFollowing] = useState(() => {
-    const followedCreators = JSON.parse(localStorage.getItem("followedCreators") || "[]");
-    return followedCreators.includes(creatorId);
+    try {
+      const followedCreators = JSON.parse(localStorage.getItem("followedCreators") || "[]");
+      return followedCreators.includes(creatorId || "");
+    } catch (error) {
+      console.error("Error reading followed creators from localStorage:", error);
+      return false;
+    }
   });
+
+  // Sync with localStorage changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === "followedCreators" && e.newValue) {
+        try {
+          const followedCreators = JSON.parse(e.newValue);
+          setIsFollowing(followedCreators.includes(creatorId || ""));
+        } catch (error) {
+          console.error("Error parsing followed creators:", error);
+        }
+      }
+    };
+
+    window.addEventListener("storage", handleStorageChange);
+    return () => window.removeEventListener("storage", handleStorageChange);
+  }, [creatorId]);
   const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
+  const [showCallTypeSelection, setShowCallTypeSelection] = useState(false);
+  const [selectedCallType, setSelectedCallType] = useState<"audio" | "video">("video");
   const [selectedMedia, setSelectedMedia] = useState<{ type: 'image' | 'video', url: string } | null>(null);
   const { toast } = useToast();
   const { balance } = useWallet();
-  const pricePerMinute = creator.price;
+  const pricePerMinute = creator?.price || 0;
   const minBalance = pricePerMinute * 3;
+
+  // BUG-015 FIX: Show error state if creator not found
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading creator profile...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (notFound || !creator) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <Card className="max-w-md w-full p-8 text-center">
+          <AlertCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
+          <h1 className="text-2xl font-bold mb-2">Creator Not Found</h1>
+          <p className="text-muted-foreground mb-6">
+            The creator profile you're looking for doesn't exist or has been removed.
+          </p>
+          <Button onClick={() => setLocation("/user")}>
+            Back to Home
+          </Button>
+        </Card>
+      </div>
+    );
+  }
 
   const handleTalkNow = () => {
     if (balance < minBalance) {
@@ -172,7 +112,24 @@ export default function CreatorProfile() {
 
   const handleAcceptPrivacy = () => {
     setShowPrivacyWarning(false);
-    setLocation("/user/call");
+
+    // If creator has only one call type enabled, directly initiate call
+    if (creator.allowedCallTypes === "audio") {
+      setSelectedCallType("audio");
+      setLocation(`/user/call/${creator.id}?callType=audio`);
+    } else if (creator.allowedCallTypes === "video") {
+      setSelectedCallType("video");
+      setLocation(`/user/call/${creator.id}?callType=video`);
+    } else {
+      // Creator has both enabled - show selection screen
+      setShowCallTypeSelection(true);
+    }
+  };
+
+  const handleCallTypeSelect = (type: "audio" | "video") => {
+    setSelectedCallType(type);
+    setShowCallTypeSelection(false);
+    setLocation(`/user/call/${creator.id}?callType=${type}`);
   };
 
   const handleChat = () => {
@@ -181,10 +138,10 @@ export default function CreatorProfile() {
 
   const handleFollow = () => {
     if (!creatorId) return;
-    
+
     const newFollowState = !isFollowing;
     setIsFollowing(newFollowState);
-    
+
     // Update localStorage directly
     const followedCreators = JSON.parse(localStorage.getItem("followedCreators") || "[]");
     if (newFollowState) {
@@ -236,6 +193,7 @@ export default function CreatorProfile() {
           languages={creator.languages}
           isOnline={creator.isOnline}
           isFollowing={isFollowing}
+          allowedCallTypes={creator.allowedCallTypes}
           onTalkNow={handleTalkNow}
           onFollow={handleFollow}
           onChat={handleChat}
@@ -250,7 +208,7 @@ export default function CreatorProfile() {
                 <h4 className="text-sm font-medium text-muted-foreground mb-2" data-testid="subheading-aboutme">About Me</h4>
                 <p className="text-sm" data-testid="text-aboutme">{creator.aboutMe}</p>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2" data-testid="subheading-talksabout">Talks About</h4>
                 <div className="flex flex-wrap gap-2" data-testid="container-topics">
@@ -261,7 +219,7 @@ export default function CreatorProfile() {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2" data-testid="subheading-hobbies">Hobbies</h4>
                 <div className="flex flex-wrap gap-2" data-testid="container-hobbies">
@@ -272,7 +230,7 @@ export default function CreatorProfile() {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2" data-testid="subheading-food">Food Preferences</h4>
                 <div className="flex flex-wrap gap-2" data-testid="container-food">
@@ -283,7 +241,7 @@ export default function CreatorProfile() {
                   ))}
                 </div>
               </div>
-              
+
               <div>
                 <h4 className="text-sm font-medium text-muted-foreground mb-2" data-testid="subheading-sports">Sports Interests</h4>
                 <div className="flex flex-wrap gap-2" data-testid="container-sports">
@@ -297,31 +255,45 @@ export default function CreatorProfile() {
             </Card>
           </div>
 
+          {/* BUG-045 FIX: Add empty state for creator media */}
+          {/* BUG-048 FIX: Use responsive grid with breakpoints */}
           {/* Photos & Videos Section */}
           <div>
             <h3 className="text-lg font-semibold mb-3">Photos & Videos</h3>
-            <div className="grid grid-cols-3 gap-2">
-              {profileMedia.images.map((img, idx) => (
-                <div 
-                  key={idx} 
-                  className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
-                  onClick={() => setSelectedMedia({ type: 'image', url: img })}
-                  data-testid={`media-image-${idx}`}
-                >
-                  <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+            {profileMedia.images.length === 0 && !profileMedia.video ? (
+              <div className="text-center py-8" role="status" aria-live="polite">
+                <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-muted flex items-center justify-center">
+                  <Play className="w-8 h-8 text-muted-foreground" aria-hidden="true" />
                 </div>
-              ))}
-              <div 
-                className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative bg-black"
-                onClick={() => setSelectedMedia({ type: 'video', url: profileMedia.video })}
-                data-testid="media-video"
-              >
-                <video src={profileMedia.video} className="w-full h-full object-cover" />
-                <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                  <Play className="w-12 h-12 text-white" fill="white" />
+                <h4 className="font-semibold mb-2">No media available</h4>
+                <p className="text-sm text-muted-foreground">
+                  {creator.name} hasn't shared any photos or videos yet.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {profileMedia.images.map((img, idx) => (
+                  <div
+                    key={idx}
+                    className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                    onClick={() => setSelectedMedia({ type: 'image', url: img })}
+                    data-testid={`media-image-${idx}`}
+                  >
+                    <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
+                  </div>
+                ))}
+                <div
+                  className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative bg-black"
+                  onClick={() => setSelectedMedia({ type: 'video', url: profileMedia.video })}
+                  data-testid="media-video"
+                >
+                  <video src={profileMedia.video} className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                    <Play className="w-12 h-12 text-white" fill="white" />
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
       </main>
@@ -333,19 +305,63 @@ export default function CreatorProfile() {
         />
       )}
 
+      {showCallTypeSelection && (
+        <Dialog open={showCallTypeSelection} onOpenChange={setShowCallTypeSelection}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Choose Call Type</DialogTitle>
+              <DialogDescription>
+                Select how you'd like to connect with {creator.name}
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4 py-4">
+              <Button
+                variant={selectedCallType === "audio" ? "default" : "outline"}
+                className="h-32 flex flex-col gap-3"
+                onClick={() => handleCallTypeSelect("audio")}
+                data-testid="button-select-audio"
+              >
+                <Phone className="w-8 h-8" />
+                <span className="font-medium">Audio Call</span>
+                <span className="text-xs text-muted-foreground">₹{creator.price}/min</span>
+              </Button>
+              <Button
+                variant={selectedCallType === "video" ? "default" : "outline"}
+                className="h-32 flex flex-col gap-3"
+                onClick={() => handleCallTypeSelect("video")}
+                data-testid="button-select-video"
+              >
+                <Video className="w-8 h-8" />
+                <span className="font-medium">Video Call</span>
+                <span className="text-xs text-muted-foreground">₹{creator.price}/min</span>
+              </Button>
+            </div>
+            <DialogFooter>
+              <Button
+                variant="outline"
+                onClick={() => setShowCallTypeSelection(false)}
+                data-testid="button-cancel-call-type"
+              >
+                Cancel
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {selectedMedia && (
         <Dialog open={!!selectedMedia} onOpenChange={() => setSelectedMedia(null)}>
           <DialogContent className="max-w-4xl p-0">
             {selectedMedia.type === 'image' ? (
-              <img 
-                src={selectedMedia.url} 
-                alt="Full size" 
+              <img
+                src={selectedMedia.url}
+                alt="Full size"
                 className="w-full h-auto rounded-lg"
               />
             ) : (
-              <video 
-                src={selectedMedia.url} 
-                controls 
+              <video
+                src={selectedMedia.url}
+                controls
                 autoPlay
                 className="w-full h-auto rounded-lg"
                 data-testid="video-player"
