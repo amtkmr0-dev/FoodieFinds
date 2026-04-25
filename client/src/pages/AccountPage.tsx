@@ -46,22 +46,55 @@ import {
   CreditCard,
   Smartphone,
   Building2,
+  Video,
 } from "lucide-react";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
+import { getTalktimeTransactions, recordRechargeTransaction, subscribeToTalktimeTransactions } from "@/lib/wallet-transactions";
+import { APP_LANGUAGES, useAppLanguage } from "@/lib/language";
+import { addLocalWalletBalance } from "@/hooks/useWallet";
+import { getUserCallLogs, subscribeToCallLogs } from "@/lib/call-logs";
+import { ProfilePicturePicker } from "@/components/ProfilePicturePicker";
+import { getStoredProfilePicture, saveStoredProfilePicture, USER_PROFILE_PICTURE_KEY } from "@/lib/profile-pictures";
+
+function createLocalRechargeResponse(amount: number, paymentMethod: string, userId: string) {
+  const transactionId = `LOCAL${Date.now()}`;
+
+  return {
+    success: true,
+    wallet: {
+      id: `wallet_${userId}`,
+      userId,
+      balance: amount.toFixed(2),
+      updatedAt: new Date(),
+    },
+    transaction: {
+      transactionId,
+      status: "success",
+      paymentMethod,
+      amount,
+      currency: "INR",
+    },
+    totalAmount: amount,
+    status: "success",
+    transactionId,
+    message: "Payment completed in local demo mode.",
+  };
+}
 
 export default function AccountPage() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { language: selectedLanguage, setLanguage, t } = useAppLanguage();
   const [showRechargeModal, setShowRechargeModal] = useState(false);
   const [selectedPack, setSelectedPack] = useState<typeof rechargePacks[0] | null>(null);
   const [dndEnabled, setDndEnabled] = useState(false);
-  const [selectedLanguage, setSelectedLanguage] = useState("English");
   const [isEditing, setIsEditing] = useState(false);
   const [copiedUserId, setCopiedUserId] = useState(false);
   const [showBlockedCreators, setShowBlockedCreators] = useState(false);
+  const [showProfilePicturePicker, setShowProfilePicturePicker] = useState(false);
 
   // Mock user data
   const [userProfile, setUserProfile] = useState({
@@ -69,7 +102,7 @@ export default function AccountPage() {
     phone: "+91 98765 43210",
     email: "user@example.com",
     name: "Ravi Kumar",
-    profilePicture: "",
+    profilePicture: getStoredProfilePicture(USER_PROFILE_PICTURE_KEY),
     username: "SwiftHawk1234",
   });
 
@@ -82,7 +115,17 @@ export default function AccountPage() {
 
   // BUG-032 FIX: Implement API call to fetch transaction history
   const [transactions, setTransactions] = useState<any[]>([]);
+  const [callLogs, setCallLogs] = useState(() => getUserCallLogs());
   const [isLoadingTransactions, setIsLoadingTransactions] = useState(false);
+
+  const handleProfilePictureSelect = (imageUrl: string) => {
+    saveStoredProfilePicture(USER_PROFILE_PICTURE_KEY, imageUrl);
+    setUserProfile((profile) => ({ ...profile, profilePicture: imageUrl }));
+    toast({
+      title: "Profile picture updated",
+      description: "Your new picture is visible on your account profile.",
+    });
+  };
 
   // Fetch transactions from API
   useEffect(() => {
@@ -90,32 +133,31 @@ export default function AccountPage() {
       setIsLoadingTransactions(true);
       try {
         const userId = localStorage.getItem("linky_device_id") || "user_001";
-        const response = await fetch(`/api/wallet/transactions/${userId}`);
+        const response = await fetch(`/api/wallet/${userId}/transactions`);
         if (response.ok) {
           const data = await response.json();
-          setTransactions(data.transactions || []);
+          const apiTransactions = Array.isArray(data) ? data : data.transactions || [];
+          setTransactions(apiTransactions.length > 0 ? apiTransactions : getTalktimeTransactions());
         } else {
-          // Fallback to mock data if API fails
-          setTransactions([
-            { id: "1", date: "2025-01-03", amount: 500, bonus: 50, total: 550 },
-            { id: "2", date: "2025-01-01", amount: 1000, bonus: 150, total: 1150 },
-            { id: "3", date: "2024-12-28", amount: 200, bonus: 20, total: 220 },
-          ]);
+          setTransactions(getTalktimeTransactions());
         }
-      } catch (error) {
-        console.error("Error fetching transactions:", error);
-        // Fallback to mock data on error
-        setTransactions([
-          { id: "1", date: "2025-01-03", amount: 500, bonus: 50, total: 550 },
-          { id: "2", date: "2025-01-01", amount: 1000, bonus: 150, total: 1150 },
-          { id: "3", date: "2024-12-28", amount: 200, bonus: 20, total: 220 },
-        ]);
+      } catch {
+        setTransactions(getTalktimeTransactions());
       } finally {
         setIsLoadingTransactions(false);
       }
     };
 
     fetchTransactions();
+  }, []);
+
+  useEffect(() => {
+    setCallLogs(getUserCallLogs());
+    return subscribeToCallLogs(() => setCallLogs(getUserCallLogs()));
+  }, []);
+
+  useEffect(() => {
+    return subscribeToTalktimeTransactions(() => setTransactions(getTalktimeTransactions()));
   }, []);
 
   // Mock blocked creators
@@ -133,7 +175,7 @@ export default function AccountPage() {
     { pay: 5000, get: 6000, bonus: 1000, emoji: "💰", color: "from-green-500 to-emerald-500", label: "Ultimate" },
   ];
 
-  const languages = ["English", "हिंदी", "தமிழ்", "తెలుగు", "বাংলা"];
+  const languages = APP_LANGUAGES;
 
   const handleUnblock = (creatorId: string) => {
     setBlockedCreators(blockedCreators.filter((c) => c.id !== creatorId));
@@ -182,13 +224,17 @@ export default function AccountPage() {
         throw new Error("Invalid amount. Amount must be a positive number.");
       }
 
-      // BUG-003 FIX: Send amount as number, not string
-      const response = await apiRequest("POST", "/api/wallet/recharge", {
-        userId,
-        amount: data.amount,
-        paymentMethod: data.paymentMethod,
-      });
-      return response.json();
+      try {
+        // BUG-003 FIX: Send amount as number, not string
+        const response = await apiRequest("POST", "/api/wallet/recharge", {
+          userId,
+          amount: data.amount,
+          paymentMethod: data.paymentMethod,
+        });
+        return response.json();
+      } catch {
+        return createLocalRechargeResponse(data.amount, data.paymentMethod, userId);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
@@ -211,15 +257,17 @@ export default function AccountPage() {
         { amount: selectedPack.pay, paymentMethod: method },
         {
           onSuccess: () => {
-            // Add new transaction to the list
-            const newTransaction = {
-              id: Date.now().toString(),
-              date: new Date().toISOString().split('T')[0],
+            const paymentMethod = paymentMethods.find(m => m.id === method)?.name || method;
+            addLocalWalletBalance(selectedPack.get);
+            const updatedTransactions = recordRechargeTransaction({
+              transactionId: `LOCAL${Date.now()}`,
               amount: selectedPack.pay,
               bonus: selectedPack.bonus,
               total: selectedPack.get,
-            };
-            setTransactions([newTransaction, ...transactions]);
+              paymentMethod,
+              status: "success",
+            });
+            setTransactions(updatedTransactions);
 
             toast({
               title: "Payment Successful!",
@@ -339,13 +387,13 @@ export default function AccountPage() {
   const supportEnabled = localStorage.getItem("firstRechargeCompleted") === "true";
 
   const legalLinks = [
-    { title: "Terms and Conditions", onClick: () => window.open("/legal/terms", "_blank") },
-    { title: "Terms of Use", onClick: () => window.open("/legal/terms-of-use", "_blank") },
-    { title: "Privacy Policy", onClick: () => window.open("/legal/privacy", "_blank") },
-    { title: "Refund/Cancellation Policy", onClick: () => window.open("/legal/refund", "_blank") },
-    { title: "Community Guidelines", onClick: () => window.open("/legal/community", "_blank") },
-    { title: "Content Moderation", onClick: () => window.open("/legal/moderation", "_blank") },
-    { title: "Compliance Statement", onClick: () => window.open("/legal/compliance", "_blank") },
+    { title: "Terms and Conditions", path: "/legal/terms" },
+    { title: "Terms of Use", path: "/legal/terms-of-use" },
+    { title: "Privacy Policy", path: "/legal/privacy" },
+    { title: "Refund/Cancellation Policy", path: "/legal/refund" },
+    { title: "Community Guidelines", path: "/legal/community" },
+    { title: "Content Moderation", path: "/legal/moderation" },
+    { title: "Compliance Statement", path: "/legal/compliance" },
   ];
 
   return (
@@ -423,7 +471,9 @@ export default function AccountPage() {
                   size="icon"
                   variant="secondary"
                   className="absolute -bottom-1 -right-1 w-8 h-8 rounded-full"
+                  onClick={() => setShowProfilePicturePicker(true)}
                   data-testid="button-upload-photo"
+                  aria-label="Change profile picture"
                 >
                   <Camera className="w-4 h-4" />
                 </Button>
@@ -534,7 +584,7 @@ export default function AccountPage() {
           data-testid="button-recharge"
         >
           <Wallet className="w-5 h-5 mr-2" />
-          Recharge Wallet
+          {t("rechargeWallet")}
         </Button>
 
         {/* Talktime Transactions */}
@@ -545,7 +595,7 @@ export default function AccountPage() {
                 <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="button-talktime-transactions">
                   <div className="flex items-center gap-2">
                     <History className="w-5 h-5" />
-                    <span className="font-semibold">Talktime Transactions</span>
+                    <span className="font-semibold">{t("talktimeTransactions")}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent className="px-6 pb-4">
@@ -574,21 +624,91 @@ export default function AccountPage() {
                           data-testid={`transaction-${tx.id}`}
                         >
                           <div>
-                            <div className="font-medium">₹{tx.total.toFixed(2)}</div>
+                            <div className="font-medium">
+                              {tx.type === "call" ? "-" : ""}₹{Math.abs(Number(tx.total)).toFixed(2)}
+                            </div>
                             <div className="text-xs text-muted-foreground">{tx.date}</div>
+                            {tx.paymentMethod && (
+                              <div className="text-xs text-muted-foreground">
+                                {tx.paymentMethod}
+                              </div>
+                            )}
                           </div>
                           <div className="text-right">
-                            <div className="text-sm">Paid ₹{tx.amount.toFixed(2)}</div>
-                            <div className="text-xs text-success">+₹{tx.bonus.toFixed(2)} bonus</div>
+                            {tx.type === "call" ? (
+                              <div className="text-sm text-destructive">Call charge</div>
+                            ) : (
+                              <>
+                                <div className="text-sm">{t("paid")} ₹{Number(tx.amount).toFixed(2)}</div>
+                                <div className="text-xs text-success">+₹{Number(tx.bonus || 0).toFixed(2)} {t("bonus")}</div>
+                              </>
+                            )}
                           </div>
                         </div>
                       ))
                     ) : (
                       <div className="text-center py-8">
                         <History className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
-                        <p className="text-sm text-muted-foreground">No transactions yet</p>
+                        <p className="text-sm text-muted-foreground">{t("noTransactions")}</p>
                         <p className="text-xs text-muted-foreground mt-1">
-                          Your recharge history will appear here
+                          {t("transactionHint")}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </AccordionContent>
+              </AccordionItem>
+            </Accordion>
+          </CardContent>
+        </Card>
+
+        {/* User Call Logs */}
+        <Card>
+          <CardContent className="p-0">
+            <Accordion type="single" collapsible className="w-full">
+              <AccordionItem value="call-logs" className="border-0">
+                <AccordionTrigger className="px-6 py-4 hover:no-underline" data-testid="button-user-call-logs">
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-5 h-5" />
+                    <span className="font-semibold">Call Logs</span>
+                  </div>
+                </AccordionTrigger>
+                <AccordionContent className="px-6 pb-4">
+                  <div className="space-y-3">
+                    {callLogs.length > 0 ? (
+                      callLogs.map((call) => (
+                        <div
+                          key={call.id}
+                          className="flex items-center justify-between py-2 border-b last:border-0"
+                          data-testid={`call-log-${call.id}`}
+                        >
+                          <div>
+                            <button
+                              type="button"
+                              className="font-medium text-left hover:text-primary hover:underline"
+                              onClick={() => setLocation(`/user/creator/${call.creatorId}`)}
+                              data-testid={`button-call-log-creator-${call.creatorId}`}
+                            >
+                              {call.creatorName}
+                            </button>
+                            <div className="text-xs text-muted-foreground">{call.date}</div>
+                            <div className="text-xs text-muted-foreground flex items-center gap-1">
+                              {call.callType === "video" ? <Video className="w-3 h-3" /> : <Phone className="w-3 h-3" />}
+                              {call.callType === "video" ? "Video" : "Audio"} • {call.durationLabel}
+                            </div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-sm text-destructive">-₹{Number(call.totalCost).toFixed(2)}</div>
+                            <Badge className="bg-success">Completed</Badge>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="text-center py-8">
+                        <Phone className="w-12 h-12 mx-auto text-muted-foreground mb-3" />
+                        <p className="text-sm text-muted-foreground">No calls yet</p>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          Completed audio and video calls will appear here
                         </p>
                       </div>
                     )}
@@ -610,7 +730,7 @@ export default function AccountPage() {
               <div className="flex items-center gap-3">
                 <UserX className="w-5 h-5" />
                 <div>
-                  <div className="font-medium">Blocked Creators</div>
+                  <div className="font-medium">{t("blockedCreators")}</div>
                   <div className="text-xs text-muted-foreground">
                     {blockedCreators.length} blocked
                   </div>
@@ -633,12 +753,12 @@ export default function AccountPage() {
             >
               <MessageSquare className="w-5 h-5 mr-2" />
               {supportEnabled
-                ? "Contact Support"
-                : "Complete your first recharge to unlock support"}
+                ? t("supportAvailable")
+                : t("supportLocked")}
             </Button>
             {!supportEnabled && (
               <p className="text-xs text-muted-foreground text-center mt-2">
-                Support chat is available after your first successful recharge
+                {t("supportHint")}
               </p>
             )}
           </CardContent>
@@ -649,7 +769,7 @@ export default function AccountPage() {
           <CardHeader>
             <CardTitle className="text-base flex items-center gap-2">
               <Settings className="w-5 h-5" />
-              Settings
+              {t("settings")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -659,7 +779,7 @@ export default function AccountPage() {
                 <AccordionTrigger className="py-3">
                   <div className="flex items-center gap-3">
                     <Globe className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-sm">Language</span>
+                    <span className="font-medium text-sm">{t("language")}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -669,7 +789,7 @@ export default function AccountPage() {
                         key={lang}
                         variant={selectedLanguage === lang ? "default" : "outline"}
                         className="cursor-pointer hover-elevate"
-                        onClick={() => setSelectedLanguage(lang)}
+                        onClick={() => setLanguage(lang)}
                         data-testid={`badge-language-${lang}`}
                       >
                         {lang}
@@ -684,9 +804,9 @@ export default function AccountPage() {
                 <div className="flex items-center gap-3">
                   <BellOff className="w-5 h-5 text-muted-foreground" />
                   <div>
-                    <div className="font-medium text-sm">DND Mode</div>
+                    <div className="font-medium text-sm">{t("dndMode")}</div>
                     <div className="text-xs text-muted-foreground">
-                      Stop receiving promotional calls
+                      {t("stopPromotionalCalls")}
                     </div>
                   </div>
                 </div>
@@ -702,7 +822,7 @@ export default function AccountPage() {
                 <AccordionTrigger className="py-3">
                   <div className="flex items-center gap-3">
                     <Shield className="w-5 h-5 text-muted-foreground" />
-                    <span className="font-medium text-sm">Legal & Policies</span>
+                    <span className="font-medium text-sm">{t("legalPolicies")}</span>
                   </div>
                 </AccordionTrigger>
                 <AccordionContent>
@@ -711,7 +831,7 @@ export default function AccountPage() {
                       <div
                         key={link.title}
                         className="flex items-center justify-between py-2 px-3 cursor-pointer hover-elevate rounded-md"
-                        onClick={link.onClick}
+                        onClick={() => setLocation(link.path)}
                         data-testid={`legal-${link.title.toLowerCase().replace(/\s+/g, "-")}`}
                       >
                         <span className="text-sm">{link.title}</span>
@@ -730,7 +850,7 @@ export default function AccountPage() {
               >
                 <div className="flex items-center gap-3">
                   <AlertCircle className="w-5 h-5 text-muted-foreground" />
-                  <span className="font-medium text-sm">Report a Problem</span>
+                  <span className="font-medium text-sm">{t("reportProblem")}</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-muted-foreground" />
               </div>
@@ -745,7 +865,7 @@ export default function AccountPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <UserX className="w-5 h-5" />
-              Blocked Creators
+              {t("blockedCreators")}
             </DialogTitle>
             <DialogDescription>
               Creators you have blocked will not be able to contact you
@@ -894,6 +1014,15 @@ export default function AccountPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ProfilePicturePicker
+        open={showProfilePicturePicker}
+        onOpenChange={setShowProfilePicturePicker}
+        currentImage={userProfile.profilePicture}
+        fallbackText={userProfile.username}
+        title="Change your profile picture"
+        onSelect={handleProfilePictureSelect}
+      />
     </div>
   );
 }

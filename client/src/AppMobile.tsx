@@ -34,7 +34,7 @@ function CallInterfaceWrapper() {
   return (
     <CallInterface
       creatorName={creator.name}
-      creatorImage={undefined}
+      creatorImage={creator.image}
       creatorId={creator.id}
       pricePerMinute={pricePerMinute}
       callType={callType}

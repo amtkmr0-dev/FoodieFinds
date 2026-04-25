@@ -158,14 +158,8 @@ export default function CreatorProfile() {
   };
 
   const profileMedia = {
-    images: [
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop",
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=400&fit=crop",
-    ],
-    video: "https://storage.coverr.co/videos/coverr-woman-smiling-at-camera-8031/preview"
+    images: creator.mediaImages,
+    video: creator.mediaVideo,
   };
 
   return (
@@ -187,6 +181,7 @@ export default function CreatorProfile() {
       <main className="max-w-3xl mx-auto">
         <CreatorProfileHeader
           name={creator.name}
+          image={creator.image}
           country={creator.country}
           followers={creator.followers}
           price={creator.price}
@@ -282,16 +277,18 @@ export default function CreatorProfile() {
                     <img src={img} alt={`Photo ${idx + 1}`} className="w-full h-full object-cover" />
                   </div>
                 ))}
-                <div
-                  className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative bg-black"
-                  onClick={() => setSelectedMedia({ type: 'video', url: profileMedia.video })}
-                  data-testid="media-video"
-                >
-                  <video src={profileMedia.video} className="w-full h-full object-cover" />
-                  <div className="absolute inset-0 flex items-center justify-center bg-black/30">
-                    <Play className="w-12 h-12 text-white" fill="white" />
+                {profileMedia.video && (
+                  <div
+                    className="aspect-square rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity relative bg-black"
+                    onClick={() => setSelectedMedia({ type: 'video', url: profileMedia.video })}
+                    data-testid="media-video"
+                  >
+                    <video src={profileMedia.video} className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 flex items-center justify-center bg-black/30">
+                      <Play className="w-12 h-12 text-white" fill="white" />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
           </div>

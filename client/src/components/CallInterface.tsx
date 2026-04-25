@@ -12,6 +12,9 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { generateUUID } from "@/lib/auth";
+import { addLocalWalletBalance } from "@/hooks/useWallet";
+import { recordCallLog } from "@/lib/call-logs";
+import { recordCallWalletTransaction } from "@/lib/wallet-transactions";
 
 interface CallInterfaceProps {
   creatorName: string;
@@ -46,6 +49,7 @@ export function CallInterface({
   const [callEndedReason, setCallEndedReason] = useState<'user' | 'insufficient_balance' | 'negative_balance' | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
   const remoteVideoRef = useRef<HTMLVideoElement>(null);
+  const isEndingCallRef = useRef(false);
   const { balance } = useWallet();
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -207,7 +211,82 @@ export function CallInterface({
     },
   });
 
+  const finishCallLocally = useCallback((deductLocally: boolean) => {
+    const transactionId = `CALL${Date.now()}`;
+
+    if (deductLocally && totalCost > 0) {
+      addLocalWalletBalance(-totalCost);
+    }
+
+    const userId = localStorage.getItem("linky_device_id") || "user_001";
+    const storedUser = localStorage.getItem("auth_user");
+    let userName = "User";
+    if (storedUser) {
+      try {
+        const parsedUser = JSON.parse(storedUser);
+        userName = parsedUser.username || parsedUser.phone || parsedUser.userId || userName;
+      } catch {
+        userName = localStorage.getItem("linky_username") || userName;
+      }
+    } else {
+      userName = localStorage.getItem("linky_username") || userName;
+    }
+
+    recordCallLog({
+      id: transactionId,
+      userId,
+      userName,
+      creatorId,
+      creatorName,
+      callType,
+      durationSeconds: duration,
+      pricePerMinute,
+      callCost,
+      giftCost: totalGiftCost,
+      totalCost,
+      creatorEarnings: totalCost,
+    });
+
+    if (totalCost > 0) {
+      recordCallWalletTransaction({
+        transactionId,
+        amount: totalCost,
+        creatorName,
+        callType,
+      });
+    }
+
+    localStorage.setItem("linky_first_call_completed", "true");
+
+    let description: string;
+
+    if (callEndedReason === 'negative_balance') {
+      description = `Call ended due to insufficient balance. Cost: ₹${totalCost.toFixed(2)}`;
+    } else if (callEndedReason === 'insufficient_balance') {
+      description = `Call ended as balance reached zero. Cost: ₹${totalCost.toFixed(2)}`;
+    } else {
+      const costBreakdown = totalGiftCost > 0
+        ? `Call: ₹${callCost} + Gifts: ₹${totalGiftCost} = ₹${totalCost}`
+        : `₹${totalCost}`;
+      description = `${costBreakdown} has been deducted from your wallet.`;
+    }
+
+    toast({
+      title: "Call Ended",
+      description,
+      variant: callEndedReason ? "destructive" : "default",
+    });
+
+    onEndCall?.();
+    if (!onEndCall) {
+      setLocation("/user");
+    }
+  }, [callCost, callEndedReason, callType, creatorId, creatorName, duration, onEndCall, pricePerMinute, setLocation, toast, totalCost, totalGiftCost]);
+
   const handleEndCall = () => {
+    if (isEndingCallRef.current) return;
+    isEndingCallRef.current = true;
+
     // BUG-028 FIX: Stop the timer when call ends
     setIsCallActive(false);
 
@@ -234,47 +313,10 @@ export function CallInterface({
       },
       {
         onSuccess: () => {
-          let description: string;
-
-          if (callEndedReason === 'negative_balance') {
-            description = `Call ended due to insufficient balance. Cost: ₹${totalCost.toFixed(2)}`;
-          } else if (callEndedReason === 'insufficient_balance') {
-            description = `Call ended as balance reached zero. Cost: ₹${totalCost.toFixed(2)}`;
-          } else {
-            const costBreakdown = totalGiftCost > 0
-              ? `Call: ₹${callCost} + Gifts: ₹${totalGiftCost} = ₹${totalCost}`
-              : `₹${totalCost}`;
-            description = `${costBreakdown} has been deducted from your wallet.`;
-          }
-
-          toast({
-            title: "Call Ended",
-            description,
-            variant: callEndedReason ? "destructive" : "default",
-          });
-          onEndCall?.();
+          finishCallLocally(false);
         },
-        onError: (error) => {
-          // BUG-022 FIX: Show error dialog on failure instead of navigating away
-          toast({
-            title: "Call Processing Error",
-            description: error.message || "Failed to process call charges. Please try again or contact support.",
-            variant: "destructive",
-            action: (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  // Retry the call end operation
-                  handleEndCall();
-                }}
-              >
-                Retry
-              </Button>
-            ),
-          });
-          // BUG-022 FIX: Don't call onEndCall() on error - keep user on call screen
-          // This allows them to retry or contact support
+        onError: () => {
+          finishCallLocally(true);
         },
       }
     );

@@ -14,6 +14,7 @@ import { PaymentErrorDialog, PaymentErrorType } from "@/components/PaymentErrorD
 import { PaymentReceipt, PaymentReceiptData } from "@/components/PaymentReceipt";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { QUICK_RECHARGE_AMOUNTS } from "@/lib/config";
+import { recordRechargeTransaction } from "@/lib/wallet-transactions";
 
 // Payment request deduplication - track active payment requests
 const activePaymentRequests = new Map<string, boolean>();
@@ -182,6 +183,14 @@ export default function RechargePage() {
 
       setReceiptData(receipt);
       setShowReceipt(true);
+      recordRechargeTransaction({
+        transactionId: receipt.transactionId,
+        amount: receipt.amount,
+        total: receipt.total,
+        bonus: receipt.bonus || 0,
+        paymentMethod: receipt.paymentMethod,
+        status: receipt.status,
+      });
 
       // Show success message with bonus information
       const message = result.bonus && result.bonus > 0
@@ -256,6 +265,14 @@ export default function RechargePage() {
 
           setReceiptData(receipt);
           setShowReceipt(true);
+          recordRechargeTransaction({
+            transactionId: receipt.transactionId,
+            amount: receipt.amount,
+            total: receipt.total,
+            bonus: receipt.bonus || 0,
+            paymentMethod: receipt.paymentMethod,
+            status: receipt.status,
+          });
 
           toast({
             title: "Payment Successful!",

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -58,6 +58,9 @@ import {
   FileText,
   Shuffle,
 } from "lucide-react";
+import { getCreatorCallLogs, subscribeToCallLogs } from "@/lib/call-logs";
+import { ProfilePicturePicker } from "@/components/ProfilePicturePicker";
+import { CREATOR_PROFILE_PICTURE_KEY, getStoredProfilePicture, saveStoredProfilePicture } from "@/lib/profile-pictures";
 
 export default function CreatorApp() {
   const [role, setRole] = useState<"creator" | "agency">("creator");
@@ -65,6 +68,7 @@ export default function CreatorApp() {
   const [selectedTab, setSelectedTab] = useState("dashboard");
   const [selectedFilter, setSelectedFilter] = useState<string>("none");
   const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const [showProfilePicturePicker, setShowProfilePicturePicker] = useState(false);
   const [incomingCallType, setIncomingCallType] = useState<"audio" | "video">("audio");
   const [incomingCallerName, setIncomingCallerName] = useState("");
   const [allowedCallTypes, setAllowedCallTypes] = useState<"audio" | "video" | "both">("both");
@@ -75,6 +79,7 @@ export default function CreatorApp() {
     name: "Sarah Johnson",
     email: "sarah@example.com",
     mobile: "+91 9876543210",
+    profilePicture: getStoredProfilePicture(CREATOR_PROFILE_PICTURE_KEY),
   });
 
   // Bank details state
@@ -135,11 +140,31 @@ export default function CreatorApp() {
     { id: 6, name: "Universe", price: 5000, icon: Star, points: 500, color: "text-indigo-500" },
   ];
 
-  const recentCalls = [
+  const defaultRecentCalls = [
     { id: 1, user: "Rahul M.", duration: "12 min", earnings: 540, type: "video", status: "completed" },
     { id: 2, user: "Priya S.", duration: "8 min", earnings: 360, type: "voice", status: "completed" },
     { id: 3, user: "Amit K.", duration: "15 min", earnings: 675, type: "video", status: "completed" },
   ];
+  const [recentCalls, setRecentCalls] = useState(defaultRecentCalls);
+
+  useEffect(() => {
+    const refreshCallLogs = () => {
+      const loggedCalls = getCreatorCallLogs().map((call) => ({
+        id: call.id,
+        user: call.userName,
+        duration: call.durationLabel,
+        earnings: call.creatorEarnings,
+        type: call.callType === "video" ? "video" : "voice",
+        status: call.status,
+        date: call.date,
+      }));
+
+      setRecentCalls(loggedCalls.length > 0 ? loggedCalls : defaultRecentCalls);
+    };
+
+    refreshCallLogs();
+    return subscribeToCallLogs(refreshCallLogs);
+  }, []);
 
   const pkBattleHistory = [
     { id: 1, opponent: "Creator_789", result: "win", points: 1250, gifts: 25, duration: "5 min" },
@@ -190,6 +215,15 @@ export default function CreatorApp() {
     toast({
       title: "Profile Updated",
       description: "Your profile information has been successfully updated.",
+    });
+  };
+
+  const handleProfilePictureSelect = (imageUrl: string) => {
+    saveStoredProfilePicture(CREATOR_PROFILE_PICTURE_KEY, imageUrl);
+    setProfileData((profile) => ({ ...profile, profilePicture: imageUrl }));
+    toast({
+      title: "Profile picture updated",
+      description: "Your creator profile now has the selected picture.",
     });
   };
 
@@ -308,12 +342,26 @@ export default function CreatorApp() {
             <Card>
               <CardContent className="pt-6">
                 <div className="flex items-center gap-4 mb-6">
-                  <Avatar className="w-20 h-20">
-                    <AvatarImage src="" alt="Profile" />
-                    <AvatarFallback className="text-2xl">SJ</AvatarFallback>
-                  </Avatar>
+                  <div className="relative">
+                    <Avatar className="w-20 h-20">
+                      <AvatarImage src={profileData.profilePicture} alt="Profile" />
+                      <AvatarFallback className="text-2xl">
+                        {profileData.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
+                      onClick={() => setShowProfilePicturePicker(true)}
+                      data-testid="button-creator-upload-photo"
+                      aria-label="Change creator profile picture"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
                   <div className="flex-1">
-                    <h2 className="text-2xl font-bold mb-1">Sarah Johnson</h2>
+                    <h2 className="text-2xl font-bold mb-1">{profileData.name}</h2>
                     <p className="text-muted-foreground">₹45/min • {creatorStats.followers.toLocaleString()} followers</p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge className="bg-success">Approved</Badge>
@@ -464,6 +512,9 @@ export default function CreatorApp() {
                           {call.type === "video" ? <Video className="w-3 h-3" /> : <Mic className="w-3 h-3" />}
                           {call.duration} • ₹{call.earnings}
                         </p>
+                        {"date" in call && call.date && (
+                          <p className="text-xs text-muted-foreground">{call.date}</p>
+                        )}
                       </div>
                     </div>
                     <Badge className="bg-success">Completed</Badge>
@@ -1037,6 +1088,30 @@ export default function CreatorApp() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex items-center gap-4 rounded-lg border bg-muted/30 p-4">
+                  <div className="relative">
+                    <Avatar className="h-20 w-20">
+                      <AvatarImage src={profileData.profilePicture} alt="Creator profile picture" />
+                      <AvatarFallback className="text-2xl">
+                        {profileData.name.slice(0, 2).toUpperCase()}
+                      </AvatarFallback>
+                    </Avatar>
+                    <Button
+                      size="icon"
+                      variant="secondary"
+                      className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full"
+                      onClick={() => setShowProfilePicturePicker(true)}
+                      data-testid="button-settings-creator-upload-photo"
+                      aria-label="Change creator profile picture"
+                    >
+                      <Camera className="h-4 w-4" />
+                    </Button>
+                  </div>
+                  <div>
+                    <p className="font-medium">Creator profile picture</p>
+                    <p className="text-sm text-muted-foreground">Shown on your public profile, calls, and creator listings.</p>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="profile-name">Full Name</Label>
@@ -1463,6 +1538,15 @@ export default function CreatorApp() {
           }}
         />
       )}
+
+      <ProfilePicturePicker
+        open={showProfilePicturePicker}
+        onOpenChange={setShowProfilePicturePicker}
+        currentImage={profileData.profilePicture}
+        fallbackText={profileData.name}
+        title="Change creator profile picture"
+        onSelect={handleProfilePictureSelect}
+      />
     </div>
   );
 }

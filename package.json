@@ -2,6 +2,7 @@
   "name": "foodiefinds-monorepo",
   "version": "1.0.0",
   "private": true,
+  "type": "module",
   "description": "FoodieFinds Monorepo - User, Creator, and Admin apps",
   "workspaces": [
     "apps/*",

@@ -38,11 +38,10 @@ export function RandomMatchButton() {
     <>
       <Button
         size="lg"
-        className={`fixed left-1/2 -translate-x-1/2 shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${showButton
+        className={`fixed left-1/2 z-40 -translate-x-1/2 shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 ${showButton
           ? 'bottom-6 opacity-100 scale-100'
           : '-bottom-20 opacity-0 scale-90 pointer-events-none'
           }`}
-        style={{ zIndex: 9999 }}
         onClick={handleRandomMatch}
         data-testid="button-random-match"
       >

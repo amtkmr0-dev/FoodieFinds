@@ -6,16 +6,20 @@ import { CreatorCard } from "@/components/CreatorCard";
 import { BalanceDisplay } from "@/components/BalanceDisplay";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { IncomingCallModal } from "@/components/IncomingCallModal";
+import { RechargeWalletModal } from "@/components/RechargeWalletModal";
 import { ResponsiveGrid } from "@/components/ResponsiveLayout";
 import { Home, Heart, Shuffle, MessageSquare, User, Video, Phone as PhoneIcon, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import { useWallet } from "@/hooks/useWallet";
 import { creatorsData, type Creator } from "@/lib/creatorsData";
+import { useAppLanguage } from "@/lib/language";
 
 export default function UserApp() {
   const [location, setLocation] = useLocation();
   const { balance } = useWallet();
+  const { t } = useAppLanguage();
   const [showIncomingCall, setShowIncomingCall] = useState(false);
+  const [showRechargeWallet, setShowRechargeWallet] = useState(false);
   const [randomMatchedCreator, setRandomMatchedCreator] = useState<Creator | null>(null);
   const [activeTab, setActiveTab] = useState("explore");
   const [showRandomMatch, setShowRandomMatch] = useState(false);
@@ -30,6 +34,11 @@ export default function UserApp() {
     return saved ? JSON.parse(saved) : [];
   });
   const [shuffledCreators, setShuffledCreators] = useState<Creator[]>([]);
+  const shouldShowRandomMatch =
+    showRandomMatch &&
+    !showIncomingCall &&
+    !showRechargeWallet &&
+    !showCallTypeDialog;
 
   const creators = creatorsData;
 
@@ -129,11 +138,11 @@ export default function UserApp() {
     <div className="min-h-screen bg-background pb-20">
       <header className="bg-card border-b px-3 mobile-m:px-4 py-4 sticky top-0 z-40">
         <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <h1 className="text-lg mobile-m:text-xl font-bold">LINKY</h1>
+          <h1 className="text-lg mobile-m:text-xl font-bold">{t("appName")}</h1>
           <div className="flex items-center gap-2 mobile-m:gap-3">
             <BalanceDisplay
               balance={balance}
-              onClick={() => setLocation("/user/recharge")}
+              onClick={() => setShowRechargeWallet(true)}
             />
             <ThemeToggle />
           </div>
@@ -144,13 +153,13 @@ export default function UserApp() {
         <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-4 mobile-m:mb-6">
           <TabsList className="grid w-full grid-cols-3 max-w-md mx-auto h-10 mobile-m:h-11">
             <TabsTrigger value="explore" data-testid="tab-explore" className="text-xs mobile-m:text-sm">
-              Explore
+              {t("explore")}
             </TabsTrigger>
             <TabsTrigger value="new" data-testid="tab-new" className="text-xs mobile-m:text-sm">
-              New
+              {t("new")}
             </TabsTrigger>
             <TabsTrigger value="follow" data-testid="tab-follow" className="text-xs mobile-m:text-sm">
-              Follow
+              {t("follow")}
             </TabsTrigger>
           </TabsList>
 
@@ -159,9 +168,9 @@ export default function UserApp() {
             {shuffledCreators.length === 0 ? (
               <div className="text-center py-8 mobile-m:py-12" role="status" aria-live="polite">
                 <Users className="w-10 h-10 mobile-m:w-12 mobile-m:h-12 mx-auto mb-3 mobile-m:mb-4 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base mobile-m:text-lg font-semibold mb-2">No creators available</h3>
+                <h3 className="text-base mobile-m:text-lg font-semibold mb-2">{t("noCreatorsAvailable")}</h3>
                 <p className="text-sm mobile-m:text-base text-muted-foreground mb-3 mobile-m:mb-4 px-4">
-                  Check back later for new creators
+                  {t("checkBackLater")}
                 </p>
               </div>
             ) : (
@@ -181,9 +190,9 @@ export default function UserApp() {
             {shuffledCreators.length === 0 ? (
               <div className="text-center py-8 mobile-m:py-12" role="status" aria-live="polite">
                 <Users className="w-10 h-10 mobile-m:w-12 mobile-m:h-12 mx-auto mb-3 mobile-m:mb-4 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base mobile-m:text-lg font-semibold mb-2">No new creators</h3>
+                <h3 className="text-base mobile-m:text-lg font-semibold mb-2">{t("noNewCreators")}</h3>
                 <p className="text-sm mobile-m:text-base text-muted-foreground mb-3 mobile-m:mb-4 px-4">
-                  Check back later for new creators
+                  {t("checkBackLater")}
                 </p>
               </div>
             ) : (
@@ -204,9 +213,9 @@ export default function UserApp() {
             {followedCreators.length === 0 ? (
               <div className="text-center py-8 mobile-m:py-12" role="status" aria-live="polite">
                 <Heart className="w-10 h-10 mobile-m:w-12 mobile-m:h-12 mx-auto mb-3 mobile-m:mb-4 text-muted-foreground" aria-hidden="true" />
-                <h3 className="text-base mobile-m:text-lg font-semibold mb-2">No followed creators</h3>
+                <h3 className="text-base mobile-m:text-lg font-semibold mb-2">{t("noFollowedCreators")}</h3>
                 <p className="text-sm mobile-m:text-base text-muted-foreground mb-3 mobile-m:mb-4 px-4">
-                  Follow creators to see them here
+                  {t("followCreators")}
                 </p>
                 <Button
                   onClick={() => setActiveTab("explore")}
@@ -214,7 +223,7 @@ export default function UserApp() {
                   className="text-sm mobile-m:text-base"
                   aria-label="Explore creators to follow"
                 >
-                  Explore Creators
+                  {t("exploreCreators")}
                 </Button>
               </div>
             ) : (
@@ -233,12 +242,12 @@ export default function UserApp() {
       </main>
 
       {/* Bottom Navigation with Random Match Button */}
-      <div className="fixed bottom-0 left-0 right-0" style={{ zIndex: 9999 }}>
+      <div className="fixed bottom-0 left-0 right-0 z-40">
         {/* Random Match Button - Above nav bar */}
         <div className="flex justify-center pb-2 mobile-m:pb-3">
           <Button
             size="lg"
-            className={`shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 text-sm mobile-m:text-base px-6 mobile-m:px-8 h-10 mobile-m:h-11 ${showRandomMatch && !showIncomingCall
+            className={`shadow-2xl transition-all duration-500 ease-out bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white border-0 text-sm mobile-m:text-base px-6 mobile-m:px-8 h-10 mobile-m:h-11 ${shouldShowRandomMatch
               ? 'opacity-100 scale-100 animate-pulse'
               : 'opacity-0 scale-90 pointer-events-none'
               }`}
@@ -247,8 +256,8 @@ export default function UserApp() {
             data-testid="button-random-match"
           >
             <Shuffle className="w-4 h-4 mobile-m:w-5 mobile-m:h-5 mr-1 mobile-m:mr-2" />
-            <span className="hidden mobile-s:inline">Random Match</span>
-            <span className="mobile-s:hidden">Match</span>
+            <span className="hidden mobile-s:inline">{t("randomMatch")}</span>
+            <span className="mobile-s:hidden">{t("match")}</span>
           </Button>
         </div>
 
@@ -298,15 +307,20 @@ export default function UserApp() {
         />
       )}
 
+      <RechargeWalletModal
+        open={showRechargeWallet}
+        onOpenChange={setShowRechargeWallet}
+      />
+
       {/* Call Type Selection Dialog */}
       <Dialog open={showCallTypeDialog} onOpenChange={setShowCallTypeDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Choose Call Type</DialogTitle>
+            <DialogTitle>{t("chooseCallType")}</DialogTitle>
             <DialogDescription>
               {matchedCreatorForCallType ?
                 `Connect with ${matchedCreatorForCallType.name}` :
-                "Select how you want to connect with a creator"}
+                t("selectConnection")}
             </DialogDescription>
           </DialogHeader>
           <div className={`grid gap-4 py-4 ${matchedCreatorForCallType?.allowedCallTypes === "both" ? "grid-cols-2" : "grid-cols-1"}`}>
@@ -317,8 +331,8 @@ export default function UserApp() {
                 onClick={() => setSelectedCallType("audio")}
               >
                 <PhoneIcon className="w-10 h-10" />
-                <span className="font-semibold">Audio Call</span>
-                <span className="text-xs text-muted-foreground">Voice only</span>
+                <span className="font-semibold">{t("audioCall")}</span>
+                <span className="text-xs text-muted-foreground">{t("voiceOnly")}</span>
               </Button>
             ) : null}
             {matchedCreatorForCallType?.allowedCallTypes === "video" || matchedCreatorForCallType?.allowedCallTypes === "both" ? (
@@ -328,20 +342,20 @@ export default function UserApp() {
                 onClick={() => setSelectedCallType("video")}
               >
                 <Video className="w-10 h-10" />
-                <span className="font-semibold">Video Call</span>
-                <span className="text-xs text-muted-foreground">Face to face</span>
+                <span className="font-semibold">{t("videoCall")}</span>
+                <span className="text-xs text-muted-foreground">{t("faceToFace")}</span>
               </Button>
             ) : null}
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCallTypeDialog(false)}>
-              Cancel
+              {t("cancel")}
             </Button>
             <Button onClick={() => {
               setShowCallTypeDialog(false);
               startRandomMatchCall();
             }}>
-              Start Match
+              {t("startMatch")}
             </Button>
           </DialogFooter>
         </DialogContent>

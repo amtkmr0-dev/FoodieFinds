@@ -10,12 +10,13 @@ import { useLocation } from "wouter";
 import {
   sendOTP,
   verifyOTP,
+  DEMO_OTP,
   generateUUID,
   getStoredUser,
   isAuthenticated,
   logout
 } from "@/lib/auth";
-import { validatePhoneNumber, formatPhoneNumber } from "@/lib/config";
+import { validatePhoneNumber, formatPhoneNumber as formatDisplayPhoneNumber } from "@/lib/config";
 
 type FlowState = "check-device" | "phone-entry" | "otp-verification" | "success" | "error";
 
@@ -70,7 +71,7 @@ export default function SignupLogin() {
     setErrorMessage("");
 
     // Format phone number before sending
-    const formattedPhone = formatPhoneNumber(phone);
+    const formattedPhone = formatDisplayPhoneNumber(phone);
     const result = await sendOTP(formattedPhone);
 
     setIsLoading(false);
@@ -100,7 +101,7 @@ export default function SignupLogin() {
     }
 
     // BUG-025 FIX: Use formatted phone number
-    const formattedPhone = formatPhoneNumber(phone);
+    const formattedPhone = formatDisplayPhoneNumber(phone);
     const result = await verifyOTP(formattedPhone, otp, deviceId);
 
     setIsLoading(false);
@@ -121,7 +122,7 @@ export default function SignupLogin() {
     setIsLoading(true);
     setErrorMessage("");
 
-    const result = await sendOTP(phone);
+    const result = await sendOTP(formatDisplayPhoneNumber(phone));
 
     setIsLoading(false);
 
@@ -134,7 +135,7 @@ export default function SignupLogin() {
     }
   };
 
-  const formatPhoneNumber = (value: string) => {
+  const normalizePhoneInput = (value: string) => {
     const numbers = value.replace(/\D/g, '');
     if (numbers.length <= 10) {
       return numbers;
@@ -213,7 +214,7 @@ export default function SignupLogin() {
                   type="tel"
                   placeholder="9876543210"
                   value={phone}
-                  onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
+                  onChange={(e) => setPhone(normalizePhoneInput(e.target.value))}
                   className="pl-10"
                   maxLength={10}
                   data-testid="input-phone"
@@ -331,7 +332,7 @@ export default function SignupLogin() {
           {sentOtp && process.env.NODE_ENV === 'development' && (
             <div className="mt-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
               <p className="text-xs text-yellow-800 dark:text-yellow-200">
-                <strong>Development Mode:</strong> OTP is {sentOtp}
+                <strong>Development Mode:</strong> OTP is {sentOtp || DEMO_OTP}
               </p>
             </div>
           )}

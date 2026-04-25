@@ -23,6 +23,7 @@ import PaymentGatewayPage from "@/pages/PaymentGatewayPage";
 import SupportChatPage from "@/pages/SupportChatPage";
 import AdminBroadcast from "@/pages/AdminBroadcast";
 import AccountPage from "@/pages/AccountPage";
+import LegalPage from "@/pages/LegalPage";
 import { CallInterface } from "@/components/CallInterface";
 import NotFound from "@/pages/not-found";
 import { useLocation, useParams } from "wouter";
@@ -54,6 +55,7 @@ function CallInterfaceWrapper() {
   return (
     <CallInterface
       creatorName={creator.name}
+      creatorImage={creator.image}
       creatorId={creator.id}
       pricePerMinute={pricePerMinute}
       callType={callType}
@@ -96,6 +98,7 @@ function Router() {
       <Route path="/user/payment/:amount" component={PaymentGatewayPage} />
       <Route path="/user/support" component={SupportChatPage} />
       <Route path="/user/call/:id" component={CallInterfaceWrapper} />
+      <Route path="/legal/:slug" component={LegalPage} />
 
       {/* Creator & Admin Routes */}
       <Route path="/creator" component={CreatorApp} />
