@@ -9,6 +9,14 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { Phone, User, Lock, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
+const ACTIVE_TEST_CREATORS: Record<string, { otp: string; name: string; creatorId: string }> = {
+  "9717629693": {
+    otp: "123456",
+    name: "Karan Malhotra",
+    creatorId: "8",
+  },
+};
+
 export default function CreatorLogin() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
@@ -43,8 +51,32 @@ export default function CreatorLogin() {
       return;
     }
 
-    // Mock: Check if new user or existing
+    const activeCreator = ACTIVE_TEST_CREATORS[mobileNumber];
+    if (activeCreator) {
+      if (otp !== activeCreator.otp) {
+        toast({
+          title: "Invalid OTP",
+          description: "Use OTP 123456 for the active creator test account.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      localStorage.setItem("creator_registered", "true");
+      localStorage.setItem("creator_approval_status", "approved");
+      localStorage.setItem("creator_mobile", mobileNumber);
+      localStorage.setItem("creator_active_account", JSON.stringify(activeCreator));
+
+      toast({
+        title: "Welcome back",
+        description: `${activeCreator.name} is active and ready for calls.`,
+      });
+      setLocation("/creator");
+      return;
+    }
+
     const isNewUser = localStorage.getItem("creator_registered") !== "true";
+    localStorage.setItem("creator_mobile", mobileNumber);
     
     if (isNewUser) {
       setLocation("/creator/onboarding");

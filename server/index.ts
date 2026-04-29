@@ -1,4 +1,5 @@
 import express, { type Request, Response, NextFunction } from "express";
+import "dotenv/config";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./vite";
 import { log } from "./logger";
@@ -14,14 +15,15 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
       scriptSrc: ["'self'"],
       imgSrc: ["'self'", "data:", "https:"],
-      connectSrc: ["'self'"],
-      fontSrc: ["'self'"],
+      connectSrc: ["'self'", "https:", "wss:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
       objectSrc: ["'none'"],
-      mediaSrc: ["'self'"],
+      mediaSrc: ["'self'", "blob:"],
       frameSrc: ["'none'"],
+      upgradeInsecureRequests: null,
     },
   },
   crossOriginEmbedderPolicy: false,
@@ -31,7 +33,17 @@ app.use(helmet({
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
     ? process.env.ALLOWED_ORIGINS?.split(',') || ['https://foodiefinds.com']
-    : ['http://localhost:5173', 'http://localhost:5000', 'http://localhost:3000'],
+    : [
+      'http://localhost:5173',
+      'http://localhost:5000',
+      'http://localhost:3000',
+      'http://localhost:5080',
+      'http://localhost:5081',
+      'http://localhost:5082',
+      'http://127.0.0.1:5080',
+      'http://127.0.0.1:5081',
+      'http://127.0.0.1:5082',
+    ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -39,16 +51,16 @@ app.use(cors({
 
 // Rate limiting for API endpoints
 const apiLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // Limit each IP to 100 requests per windowMs
+  windowMs: Number(process.env.API_RATE_LIMIT_WINDOW_MS || 60 * 1000),
+  max: Number(process.env.API_RATE_LIMIT_MAX || 3000),
   message: { error: 'Too many requests from this IP, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
 });
 
 const authLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 5, // Limit each IP to 5 auth requests per windowMs
+  windowMs: Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60 * 1000),
+  max: Number(process.env.AUTH_RATE_LIMIT_MAX || 300),
   message: { error: 'Too many authentication attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,

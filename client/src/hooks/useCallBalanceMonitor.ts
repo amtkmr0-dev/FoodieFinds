@@ -71,34 +71,84 @@ export function useCallBalanceMonitor(
         checkCount: 0,
     });
 
-    const [totalGiftCost, setTotalGiftCost] = useState(0);
     const [duration, setDuration] = useState(0);
 
     // Track which notifications have been shown to avoid duplicates
     const warningShownRef = useRef(false);
     const criticalShownRef = useRef(false);
     const disconnectTriggeredRef = useRef(false);
+    const onDisconnectRef = useRef(onDisconnect);
+
+    useEffect(() => {
+        onDisconnectRef.current = onDisconnect;
+    }, [onDisconnect]);
 
     // Calculate live balance and remaining time
-    const calculateStatus = useCallback((currentBalance: number, currentDuration: number, giftCost: number) => {
+    const calculateStatus = useCallback((currentBalance: number, currentDuration: number) => {
         const billableMinutes = Math.ceil(currentDuration / 60);
         const callCost = billableMinutes * pricePerMinute;
-        const totalCost = callCost + giftCost;
-        const liveBalance = currentBalance - totalCost;
-        const remainingSeconds = Math.floor(((currentBalance - giftCost) / pricePerMinute) * 60);
+        const liveBalance = currentBalance - callCost;
+        const remainingSeconds = Math.max(0, Math.floor((liveBalance / pricePerMinute) * 60));
+        const canAffordNextMinute = liveBalance >= pricePerMinute;
+        const isBelowOneMinuteCredit = liveBalance > 0 && !canAffordNextMinute;
+        const isOneMinuteOrLessRemaining = liveBalance <= pricePerMinute && liveBalance > 0;
 
         return {
             liveBalance,
             remainingSeconds,
-            isLowBalance: liveBalance < warningThreshold && liveBalance > 0,
-            isCriticalBalance: liveBalance < criticalThreshold && liveBalance > 0,
-            isCallEndingSoon: remainingSeconds <= 20 && remainingSeconds > 0,
+            isLowBalance: (liveBalance < warningThreshold || isOneMinuteOrLessRemaining) && liveBalance > 0,
+            isCriticalBalance: (liveBalance < criticalThreshold || isBelowOneMinuteCredit) && liveBalance > 0,
+            isCallEndingSoon: (remainingSeconds <= 20 || isBelowOneMinuteCredit) && remainingSeconds > 0,
+            shouldDisconnect: liveBalance <= 0 || isBelowOneMinuteCredit,
         };
     }, [pricePerMinute, warningThreshold, criticalThreshold]);
 
+    const evaluateBalanceRules = useCallback((newStatus: ReturnType<typeof calculateStatus>) => {
+        // Show warning notification (only once)
+        if (newStatus.isLowBalance && !warningShownRef.current) {
+            warningShownRef.current = true;
+            toast({
+                title: "Low Balance Warning",
+                description: newStatus.liveBalance <= pricePerMinute
+                    ? `Only ₹${newStatus.liveBalance.toFixed(2)} is available. Recharge now to continue beyond this minute.`
+                    : `Your balance is ₹${newStatus.liveBalance.toFixed(2)}. Consider recharging to continue the call.`,
+                variant: "default",
+            });
+        }
+
+        // Show critical notification (only once)
+        if (newStatus.isCriticalBalance && !criticalShownRef.current) {
+            criticalShownRef.current = true;
+            toast({
+                title: "Critical Balance",
+                description: newStatus.liveBalance < pricePerMinute && newStatus.liveBalance > 0
+                    ? `Your balance is below the ₹${pricePerMinute}/min call charge. The call will be disconnected.`
+                    : `Your balance is critically low (₹${newStatus.liveBalance.toFixed(2)}). Call will end soon!`,
+                variant: "destructive",
+            });
+        }
+
+        // Auto-disconnect before the next minute can create negative balance
+        if (autoDisconnect && newStatus.shouldDisconnect && !disconnectTriggeredRef.current) {
+            disconnectTriggeredRef.current = true;
+            const reason = newStatus.liveBalance < 0 ? 'negative_balance' : 'insufficient_balance';
+
+            toast({
+                title: "Call Ended",
+                description: newStatus.liveBalance > 0 && newStatus.liveBalance < pricePerMinute
+                    ? `Balance is below one minute charge of ₹${pricePerMinute}. Please recharge to continue calling.`
+                    : "Insufficient balance to continue the call.",
+                variant: "destructive",
+            });
+
+            onDisconnectRef.current?.(reason);
+        }
+    }, [autoDisconnect, pricePerMinute, toast]);
+
     // Update gift cost (called when gifts are sent during call)
-    const updateGiftCost = useCallback((giftCost: number) => {
-        setTotalGiftCost(prev => prev + giftCost);
+    const updateGiftCost = useCallback((_giftCost: number) => {
+        // Gifts are debited immediately by the gift API. Do not subtract them
+        // again from the live call balance or the call can end early/negative.
     }, []);
 
     // Update call duration
@@ -116,7 +166,8 @@ export function useCallBalanceMonitor(
         setStatus(prev => ({ ...prev, isMonitoring: true }));
 
         // Initial calculation
-        const initialStatus = calculateStatus(balance, duration, totalGiftCost);
+        const initialStatus = calculateStatus(balance, duration);
+        evaluateBalanceRules(initialStatus);
         setStatus(prev => ({
             ...prev,
             ...initialStatus,
@@ -131,7 +182,7 @@ export function useCallBalanceMonitor(
                 await refreshBalance();
 
                 setStatus(prev => {
-                    const newStatus = calculateStatus(balance, duration, totalGiftCost);
+                    const newStatus = calculateStatus(balance, duration);
                     const updatedStatus = {
                         ...prev,
                         ...newStatus,
@@ -139,43 +190,7 @@ export function useCallBalanceMonitor(
                         checkCount: prev.checkCount + 1,
                     };
 
-                    // Show warning notification (only once)
-                    if (newStatus.isLowBalance && !warningShownRef.current) {
-                        warningShownRef.current = true;
-                        toast({
-                            title: "Low Balance Warning",
-                            description: `Your balance is ₹${newStatus.liveBalance.toFixed(2)}. Consider recharging to continue the call.`,
-                            variant: "default",
-                        });
-                    }
-
-                    // Show critical notification (only once)
-                    if (newStatus.isCriticalBalance && !criticalShownRef.current) {
-                        criticalShownRef.current = true;
-                        toast({
-                            title: "Critical Balance",
-                            description: `Your balance is critically low (₹${newStatus.liveBalance.toFixed(2)}). Call will end soon!`,
-                            variant: "destructive",
-                        });
-                    }
-
-                    // Auto-disconnect when balance is zero or negative
-                    if (autoDisconnect && newStatus.liveBalance <= 0 && !disconnectTriggeredRef.current) {
-                        disconnectTriggeredRef.current = true;
-                        const reason = newStatus.liveBalance < 0 ? 'negative_balance' : 'insufficient_balance';
-
-                        toast({
-                            title: "Call Ended",
-                            description: reason === 'negative_balance'
-                                ? "Your balance has been exhausted. The call has been disconnected."
-                                : "Insufficient balance to continue the call.",
-                            variant: "destructive",
-                        });
-
-                        if (onDisconnect) {
-                            onDisconnect(reason);
-                        }
-                    }
+                    evaluateBalanceRules(newStatus);
 
                     return updatedStatus;
                 });
@@ -188,7 +203,7 @@ export function useCallBalanceMonitor(
         return () => {
             clearInterval(intervalId);
         };
-    }, [isCallActive, balance, duration, totalGiftCost, pricePerMinute, pollInterval, autoDisconnect, onDisconnect, toast, refreshBalance, calculateStatus]);
+    }, [isCallActive, balance, duration, pricePerMinute, pollInterval, refreshBalance, calculateStatus, evaluateBalanceRules]);
 
     // Reset notification flags when call becomes inactive
     useEffect(() => {
@@ -207,7 +222,6 @@ export function useCallBalanceMonitor(
             warningShownRef.current = false;
             criticalShownRef.current = false;
             disconnectTriggeredRef.current = false;
-            setTotalGiftCost(0);
             setDuration(0);
         },
     };

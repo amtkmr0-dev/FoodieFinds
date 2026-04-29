@@ -4,8 +4,9 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { addLocalWalletBalance } from "@/hooks/useWallet";
+import { USER_ID } from "@/hooks/useWallet";
 import { recordRechargeTransaction } from "@/lib/wallet-transactions";
+import { startRazorpayRecharge } from "@/lib/razorpay";
 
 interface RechargeWalletModalProps {
   open: boolean;
@@ -57,32 +58,43 @@ export function RechargeWalletModal({ open, onOpenChange }: RechargeWalletModalP
     }
   };
 
-  const handleSelectPayment = (methodId: string) => {
+  const handleSelectPayment = async (methodId: string) => {
     if (!selectedPack || isProcessing) return;
 
     const paymentMethod = paymentMethods.find((method) => method.id === methodId)?.name || methodId;
     setIsProcessing(true);
 
-    setTimeout(() => {
-      const transactionId = `LOCAL${Date.now()}`;
-      addLocalWalletBalance(selectedPack.get);
-      recordRechargeTransaction({
-        transactionId,
+    try {
+      const result = await startRazorpayRecharge({
+        userId: USER_ID,
         amount: selectedPack.pay,
-        bonus: selectedPack.bonus,
-        total: selectedPack.get,
+        paymentMethod: methodId,
+      });
+
+      recordRechargeTransaction({
+        transactionId: result.transactionId || result.transaction?.transactionId || `RZP${Date.now()}`,
+        amount: selectedPack.pay,
+        bonus: result.bonus ?? selectedPack.bonus,
+        total: result.totalAmount ?? selectedPack.get,
         paymentMethod,
         status: "success",
       });
 
       toast({
         title: "Payment Successful!",
-        description: `₹${selectedPack.get.toFixed(2)} has been added to your wallet.`,
+        description: `₹${(result.totalAmount ?? selectedPack.get).toFixed(2)} has been added to your wallet.`,
       });
 
-      setIsProcessing(false);
       handleClose(false);
-    }, 800);
+    } catch (error: any) {
+      toast({
+        title: "Payment Failed",
+        description: error.message || "Unable to complete Razorpay payment.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (

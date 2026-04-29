@@ -11,8 +11,8 @@ const tokenBlacklist = new Set<string>();
 
 // Rate limiting for authentication endpoints
 const rateLimitMap = new Map<string, { count: number; resetTime: number }>();
-const RATE_LIMIT_WINDOW = 15 * 60 * 1000; // 15 minutes
-const MAX_REQUESTS = 5; // Max 5 requests per window
+const RATE_LIMIT_WINDOW = Number(process.env.AUTH_RATE_LIMIT_WINDOW_MS || 60 * 1000);
+const MAX_REQUESTS = Number(process.env.AUTH_RATE_LIMIT_MAX || 100);
 
 export interface JWTPayload {
     userId: string;

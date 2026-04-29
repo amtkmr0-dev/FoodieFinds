@@ -132,13 +132,33 @@ export default function AdminDashboard() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedProfile, setSelectedProfile] = useState<any>(null);
   const [profileToBan, setProfileToBan] = useState<any>(null);
+  const [apiPendingCreators, setApiPendingCreators] = useState<any[]>([]);
+  const [apiPendingAgents, setApiPendingAgents] = useState<any[]>([]);
 
   // Pricing state
   const [creatorRates, setCreatorRates] = useState<Record<string, number>>({});
   const [agencyCommissions, setAgencyCommissions] = useState<Record<string, number>>({});
 
-  // Mock data for pending KYC approvals
-  const pendingCreators = [
+  useEffect(() => {
+    const loadKycApplications = async () => {
+      try {
+        const response = await fetch("/api/admin/kyc-applications");
+        if (!response.ok) return;
+        const data = await response.json();
+        setApiPendingCreators(Array.isArray(data.creators) ? data.creators : []);
+        setApiPendingAgents(Array.isArray(data.agents) ? data.agents : []);
+      } catch (error) {
+        console.error("Unable to load KYC applications", error);
+      }
+    };
+
+    loadKycApplications();
+    const interval = setInterval(loadKycApplications, 5000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Demo data remains visible, while newly registered creators appear above it.
+  const samplePendingCreators = [
     {
       id: "1",
       name: "Ravi Kumar",
@@ -169,7 +189,7 @@ export default function AdminDashboard() {
     },
   ];
 
-  const pendingAgents = [
+  const samplePendingAgents = [
     {
       id: "3",
       name: "Agency Pro",
@@ -185,6 +205,9 @@ export default function AdminDashboard() {
       currentCommission: 20,
     },
   ];
+
+  const pendingCreators = [...apiPendingCreators, ...samplePendingCreators];
+  const pendingAgents = [...apiPendingAgents, ...samplePendingAgents];
 
   const approvedCreators = [
     {
@@ -287,6 +310,8 @@ export default function AdminDashboard() {
       if (response.ok) {
         // Update localStorage as fallback/cache
         localStorage.setItem(`${profile.role}_approval_${profile.id}`, "approved");
+        setApiPendingCreators((items) => items.filter((item) => item.id !== profile.id));
+        setApiPendingAgents((items) => items.filter((item) => item.id !== profile.id));
         toast({
           title: "Application Approved",
           description: `${profile.name} has been approved as a ${profile.role}.`,
@@ -334,6 +359,8 @@ export default function AdminDashboard() {
         // Update localStorage as fallback/cache
         localStorage.setItem(`${selectedProfile.role}_approval_${selectedProfile.id}`, "rejected");
         localStorage.setItem(`${selectedProfile.role}_rejection_${selectedProfile.id}`, rejectionReason);
+        setApiPendingCreators((items) => items.filter((item) => item.id !== selectedProfile.id));
+        setApiPendingAgents((items) => items.filter((item) => item.id !== selectedProfile.id));
 
         toast({
           title: "Application Rejected",
@@ -388,6 +415,8 @@ export default function AdminDashboard() {
         if (response.ok) {
           // Update localStorage as fallback/cache
           localStorage.setItem(`${profileToBan.role}_approval_${profileToBan.id}`, "banned");
+          setApiPendingCreators((items) => items.filter((item) => item.id !== profileToBan.id));
+          setApiPendingAgents((items) => items.filter((item) => item.id !== profileToBan.id));
           toast({
             title: "User Banned",
             description: `${profileToBan.name} has been permanently banned from the platform.`,

@@ -1,6 +1,7 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
+import { startRazorpayRecharge } from "@/lib/razorpay";
 import type { UserWallet } from "@shared/schema";
 
 interface WalletContextType {
@@ -33,33 +34,6 @@ function readStoredBalance() {
 
   const parsedBalance = Number(storedBalance);
   return Number.isFinite(parsedBalance) ? parsedBalance : 450;
-}
-
-function createFallbackRecharge(amount: number, paymentMethod: string, currentBalance: number) {
-  const nextBalance = currentBalance + amount;
-  const transactionId = `LOCAL${Date.now()}`;
-
-  return {
-    success: true,
-    wallet: {
-      id: `wallet_${USER_ID}`,
-      userId: USER_ID,
-      balance: nextBalance.toFixed(2),
-      updatedAt: new Date(),
-    } as UserWallet,
-    transaction: {
-      transactionId,
-      status: "success",
-      paymentMethod,
-      amount,
-      currency: "INR",
-    },
-    bonus: 0,
-    totalAmount: amount,
-    status: "success",
-    transactionId,
-    message: "Payment completed in local demo mode.",
-  };
 }
 
 export function addLocalWalletBalance(amount: number) {
@@ -127,16 +101,11 @@ export function WalletProvider({ children }: { children: ReactNode }) {
   // Recharge mutation
   const rechargeMutation = useMutation({
     mutationFn: async ({ amount, paymentMethod }: { amount: number; paymentMethod: string }) => {
-      try {
-        const res = await apiRequest("POST", "/api/wallet/recharge", {
-          userId: USER_ID,
-          amount, // Send as number, not string
-          paymentMethod,
-        });
-        return await res.json();
-      } catch {
-        return createFallbackRecharge(amount, paymentMethod, balance);
-      }
+      return await startRazorpayRecharge({
+        userId: USER_ID,
+        amount,
+        paymentMethod,
+      });
     },
     onSuccess: (data: any) => {
       if (data.wallet) {
@@ -149,13 +118,13 @@ export function WalletProvider({ children }: { children: ReactNode }) {
     },
   });
 
-  const refreshBalance = () => {
+  const refreshBalance = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ["/api/wallet", USER_ID] });
-  };
+  }, []);
 
-  const recharge = async (amount: number, paymentMethod: string) => {
+  const recharge = useCallback(async (amount: number, paymentMethod: string) => {
     return await rechargeMutation.mutateAsync({ amount, paymentMethod });
-  };
+  }, [rechargeMutation]);
 
   return (
     <WalletContext.Provider value={{ balance, isLoading, refreshBalance, recharge }}>

@@ -6,8 +6,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet, USER_ID } from "@/hooks/useWallet";
 import type { GiftConfig } from "@shared/schema";
-import { Heart, Sparkles, Sun, Gem, Crown, Star, Rocket, Trophy } from "lucide-react";
+import { Heart, Sparkles, Sun, Gem, Crown, Star, Rocket, Trophy, Gift, Check, Wallet } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { formatCurrency } from "@/lib/currency";
 
 interface GiftSelectionModalProps {
   isOpen: boolean;
@@ -17,6 +18,8 @@ interface GiftSelectionModalProps {
   callDuration?: number;
   pricePerMinute?: number;
   onGiftSent?: (giftCost: number) => void;
+  mode?: "send" | "request";
+  onGiftRequested?: (gift: { id: string; name: string; amount: number; quantity: number }) => void;
 }
 
 // Map icon types to actual Lucide icons
@@ -31,7 +34,23 @@ const iconMap: Record<string, any> = {
   Trophy,
 };
 
-const fallbackGifts: GiftConfig[] = [
+type GiftWithLegacyPrice = GiftConfig & {
+  price?: number | string;
+  color?: string;
+};
+
+const giftStyles: Record<string, { glow: string; ring: string; icon: string; tone: string }> = {
+  Heart: { glow: "from-rose-500/25 via-pink-500/10 to-transparent", ring: "ring-rose-400/40", icon: "text-rose-500", tone: "bg-rose-50 text-rose-700 border-rose-200" },
+  Sparkles: { glow: "from-fuchsia-500/25 via-violet-500/10 to-transparent", ring: "ring-fuchsia-400/40", icon: "text-fuchsia-500", tone: "bg-fuchsia-50 text-fuchsia-700 border-fuchsia-200" },
+  Sun: { glow: "from-amber-400/30 via-orange-400/10 to-transparent", ring: "ring-amber-300/50", icon: "text-amber-500", tone: "bg-amber-50 text-amber-700 border-amber-200" },
+  Gem: { glow: "from-cyan-400/30 via-blue-500/10 to-transparent", ring: "ring-cyan-300/50", icon: "text-cyan-500", tone: "bg-cyan-50 text-cyan-700 border-cyan-200" },
+  Crown: { glow: "from-yellow-400/30 via-amber-500/10 to-transparent", ring: "ring-yellow-300/50", icon: "text-yellow-600", tone: "bg-yellow-50 text-yellow-800 border-yellow-200" },
+  Star: { glow: "from-indigo-400/25 via-sky-500/10 to-transparent", ring: "ring-indigo-300/50", icon: "text-indigo-500", tone: "bg-indigo-50 text-indigo-700 border-indigo-200" },
+  Rocket: { glow: "from-orange-500/25 via-red-500/10 to-transparent", ring: "ring-orange-300/50", icon: "text-orange-500", tone: "bg-orange-50 text-orange-700 border-orange-200" },
+  Trophy: { glow: "from-emerald-400/25 via-lime-400/10 to-transparent", ring: "ring-emerald-300/50", icon: "text-emerald-500", tone: "bg-emerald-50 text-emerald-700 border-emerald-200" },
+};
+
+const fallbackGifts: GiftWithLegacyPrice[] = [
   {
     id: "gift_rose",
     amount: 10,
@@ -104,15 +123,41 @@ const fallbackGifts: GiftConfig[] = [
     updatedAt: new Date(),
     updatedBy: null,
   },
+  {
+    id: "gift_universe",
+    amount: 2500,
+    name: "Universe",
+    imageUrl: "",
+    iconType: "Star",
+    isActive: "true",
+    sortOrder: 7,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    updatedBy: null,
+  },
 ];
 
-function sendGiftLocally(gift: GiftConfig) {
+function getGiftAmount(gift: GiftWithLegacyPrice) {
+  const rawAmount = gift.amount ?? gift.price;
+  const amount = typeof rawAmount === "string" ? Number(rawAmount) : rawAmount;
+  return Number.isFinite(amount) && amount > 0 ? amount : 0;
+}
+
+function normalizeGift(gift: GiftWithLegacyPrice): GiftWithLegacyPrice {
+  return {
+    ...gift,
+    amount: getGiftAmount(gift),
+    iconType: gift.iconType || gift.imageUrl || "Heart",
+  };
+}
+
+function sendGiftLocally(gift: GiftWithLegacyPrice) {
   return {
     success: true,
     transaction: {
       id: `GIFT${Date.now()}`,
       giftId: gift.id,
-      amount: gift.amount,
+      amount: getGiftAmount(gift),
       status: "success",
     },
   };
@@ -126,6 +171,8 @@ export function GiftSelectionModal({
   callDuration = 0,
   pricePerMinute = 0,
   onGiftSent,
+  mode = "send",
+  onGiftRequested,
 }: GiftSelectionModalProps) {
   const { toast } = useToast();
   const { balance, refreshBalance } = useWallet();
@@ -135,18 +182,20 @@ export function GiftSelectionModal({
   const liveBalance = balance - callCost;
 
   // Fetch available gifts
-  const { data: gifts, isLoading } = useQuery<GiftConfig[]>({
+  const { data: gifts, isLoading } = useQuery<GiftWithLegacyPrice[]>({
     queryKey: ["/api/gifts"],
     enabled: isOpen,
     queryFn: async () => {
       try {
         const res = await fetch("/api/gifts", { credentials: "include" });
-        if (!res.ok) return fallbackGifts;
+        if (!res.ok) return fallbackGifts.map(normalizeGift);
 
         const data = await res.json();
-        return Array.isArray(data) && data.length > 0 ? data : fallbackGifts;
+        return Array.isArray(data) && data.length > 0
+          ? data.map(normalizeGift).filter((gift) => gift.amount > 0)
+          : fallbackGifts.map(normalizeGift);
       } catch {
-        return fallbackGifts;
+        return fallbackGifts.map(normalizeGift);
       }
     },
   });
@@ -154,7 +203,7 @@ export function GiftSelectionModal({
   // BUG-010 FIX: Standardize on 'amount' field for gift prices
   // Send gift mutation
   const sendGiftMutation = useMutation({
-    mutationFn: async (gift: GiftConfig) => {
+    mutationFn: async (gift: GiftWithLegacyPrice) => {
       try {
         const res = await apiRequest("POST", "/api/gifts/send", {
           senderId: USER_ID,
@@ -168,10 +217,13 @@ export function GiftSelectionModal({
       }
     },
     onSuccess: (data, gift) => {
-      const giftCost = gift.amount; // BUG-010 FIX: Use consistent 'amount' field
+      const giftCost = getGiftAmount(gift);
+      if (data?.wallet) {
+        queryClient.setQueryData(["/api/wallet", USER_ID], data.wallet);
+      }
       toast({
         title: "Gift Sent!",
-        description: `You sent ${gift.name} (₹${giftCost}) to ${creatorName}`,
+        description: `You sent ${gift.name} (${formatCurrency(giftCost, false)}) to ${creatorName}`,
       });
       // BUG-008 FIX: Notify parent component about gift cost
       onGiftSent?.(giftCost);
@@ -189,12 +241,23 @@ export function GiftSelectionModal({
     },
   });
 
-  const handleSendGift = (gift: GiftConfig) => {
-    const giftPrice = gift.amount; // BUG-010 FIX: Use consistent 'amount' field
+  const handleSendGift = (gift: GiftWithLegacyPrice) => {
+    const giftPrice = getGiftAmount(gift);
+    if (mode === "request") {
+      onGiftRequested?.({
+        id: gift.id,
+        name: gift.name,
+        amount: giftPrice,
+        quantity: 1,
+      });
+      onClose();
+      return;
+    }
+
     if (liveBalance < giftPrice) {
       toast({
         title: "Insufficient Balance",
-        description: `You need ₹${giftPrice} to send this gift. Your balance: ₹${liveBalance.toFixed(2)}`,
+        description: `You need ${formatCurrency(giftPrice, false)} to send this gift. Your balance: ${formatCurrency(liveBalance)}`,
         variant: "destructive",
       });
       return;
@@ -203,59 +266,106 @@ export function GiftSelectionModal({
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="sm:max-w-lg max-h-[80vh] overflow-y-auto" data-testid="dialog-gift-selection">
-        <DialogHeader>
-          <DialogTitle>Send Gift to {creatorName}</DialogTitle>
-          <p className="text-sm text-muted-foreground">
-            Your Balance: <span className="font-semibold text-foreground">₹{liveBalance.toFixed(2)}</span>
-          </p>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-2xl max-h-[86vh] overflow-hidden border-white/15 bg-white p-0 shadow-2xl" data-testid="dialog-gift-selection">
+        <DialogHeader className="relative overflow-hidden border-b bg-gradient-to-br from-slate-950 via-slate-900 to-violet-950 px-6 py-5 text-left text-white">
+          <div className="absolute inset-0 bg-[radial-gradient(circle_at_20%_0%,rgba(255,255,255,0.22),transparent_32%),radial-gradient(circle_at_88%_20%,rgba(168,85,247,0.28),transparent_34%)]" />
+          <div className="relative flex items-start justify-between gap-4 pr-7">
+            <div>
+              <DialogTitle className="text-2xl font-bold tracking-normal text-white">
+                {mode === "request" ? "Request Gift" : "Send Gift"}
+              </DialogTitle>
+              <p className="mt-1 text-sm text-white/70">
+                {mode === "request" ? `Ask ${creatorName} to send a gift` : `For ${creatorName}`}
+              </p>
+            </div>
+            <div className="rounded-md border border-white/15 bg-white/10 px-3 py-2 text-right backdrop-blur">
+              <div className="flex items-center justify-end gap-1.5 text-xs text-white/65">
+                <Wallet className="h-3.5 w-3.5" />
+                Balance
+              </div>
+              <div className="mt-0.5 text-lg font-bold tabular-nums">{formatCurrency(liveBalance)}</div>
+            </div>
+          </div>
         </DialogHeader>
 
-        {isLoading ? (
-          // BUG-042 FIX: Show skeleton loading UI instead of text
-          <div className="grid grid-cols-3 gap-3 mt-4" role="status" aria-label="Loading gifts">
-            {[1, 2, 3, 4, 5, 6].map((i) => (
-              <Card key={i} className="p-4 text-center">
-                <div className="mb-2 flex justify-center">
-                  <Skeleton className="w-12 h-12 rounded-full" />
-                </div>
-                <Skeleton className="h-4 w-20 mx-auto mb-1" />
-                <Skeleton className="h-3 w-12 mx-auto" />
-              </Card>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-3 gap-3 mt-4">
-            {gifts?.map((gift) => {
-              const IconComponent = iconMap[gift.iconType || "Heart"] || Heart;
-              const canAfford = liveBalance >= gift.amount;
-
-              return (
-                <Card
-                  key={gift.id}
-                  className={`p-4 text-center cursor-pointer transition-all ${canAfford ? "hover-elevate active-elevate-2" : "opacity-50 cursor-not-allowed"
-                    }`}
-                  onClick={() => canAfford && handleSendGift(gift)}
-                  data-testid={`card-gift-${gift.id}`}
-                >
-                  <div className="mb-2 flex justify-center">
-                    <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center">
-                      <IconComponent className="w-6 h-6 text-primary" />
-                    </div>
+        <div className="max-h-[calc(86vh-132px)] overflow-y-auto px-6 py-5">
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3" role="status" aria-label="Loading gifts">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <Card key={i} className="rounded-lg p-4 text-center">
+                  <div className="mb-3 flex justify-center">
+                    <Skeleton className="h-16 w-16 rounded-full" />
                   </div>
-                  <h4 className="font-semibold text-sm mb-1">{gift.name}</h4>
-                  <p className="text-xs font-bold text-primary">₹{gift.amount}</p>
+                  <Skeleton className="mx-auto mb-2 h-4 w-20" />
+                  <Skeleton className="mx-auto h-7 w-16 rounded-md" />
                 </Card>
-              );
-            })}
-          </div>
-        )}
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+              {gifts?.map((gift) => {
+                const amount = getGiftAmount(gift);
+                const iconKey = gift.iconType || "Heart";
+                const IconComponent = iconMap[iconKey] || Gift;
+                const style = giftStyles[iconKey] || giftStyles.Heart;
+                const canAfford = liveBalance >= amount;
+                const isSending = sendGiftMutation.isPending && sendGiftMutation.variables?.id === gift.id;
 
-        <div className="flex justify-end gap-2 mt-4">
-          <Button variant="outline" onClick={onClose} data-testid="button-cancel-gift">
-            Cancel
-          </Button>
+                return (
+                  <Card
+                    key={gift.id}
+                    className={`group relative overflow-hidden rounded-lg border bg-white p-0 text-left transition-all duration-200 ${(mode === "request" || canAfford) ? "cursor-pointer hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-xl" : "cursor-not-allowed opacity-55"}`}
+                    onClick={() => (mode === "request" || canAfford) && !sendGiftMutation.isPending && handleSendGift(gift)}
+                    data-testid={`card-gift-${gift.id}`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${style.glow}`} />
+                    <div className="relative flex min-h-[150px] flex-col items-center justify-between p-4">
+                      <div className={`grid h-16 w-16 place-items-center rounded-full bg-white shadow-lg ring-4 ${style.ring} transition-transform duration-200 ${canAfford ? "group-hover:scale-105" : ""}`}>
+                        <IconComponent className={`h-8 w-8 ${style.icon}`} />
+                      </div>
+                      <div className="w-full text-center">
+                        <h4 className="text-base font-bold text-slate-900">{gift.name}</h4>
+                        <div className={`mx-auto mt-2 inline-flex min-w-20 items-center justify-center rounded-md border px-3 py-1.5 text-sm font-extrabold tabular-nums ${style.tone}`}>
+                          {formatCurrency(amount, false)}
+                        </div>
+                      </div>
+                      <Button
+                        type="button"
+                        size="sm"
+                        className="mt-3 h-8 w-full rounded-md"
+                        disabled={(mode === "send" && !canAfford) || sendGiftMutation.isPending}
+                        onClick={(event) => {
+                          event.stopPropagation();
+                          if ((mode === "request" || canAfford) && !sendGiftMutation.isPending) handleSendGift(gift);
+                        }}
+                      >
+                        {isSending ? (
+                          "Sending..."
+                        ) : (
+                          <>
+                            <Check className="mr-1.5 h-3.5 w-3.5" />
+                            {mode === "request" ? "Request" : "Send"}
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+
+          <div className="mt-5 flex items-center justify-between gap-3 border-t pt-4">
+            <p className="text-xs text-muted-foreground">
+              {mode === "request"
+                ? "The user will see an accept or reject popup before any deduction."
+                : "Gift amount is deducted from wallet immediately."}
+            </p>
+            <Button variant="outline" onClick={onClose} data-testid="button-cancel-gift">
+              Cancel
+            </Button>
+          </div>
         </div>
       </DialogContent>
     </Dialog>

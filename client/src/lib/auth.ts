@@ -103,7 +103,7 @@ export function getUserFromToken(): AuthUser | null {
  * Check if user is authenticated
  */
 export function isAuthenticated(): boolean {
-    return accessToken !== null || localStorage.getItem('auth_user') !== null;
+    return accessToken !== null || localStorage.getItem('admin_user') !== null || localStorage.getItem('auth_user') !== null;
 }
 
 /**
@@ -216,8 +216,9 @@ export async function adminLogin(username: string, password: string): Promise<{ 
         // Store access token
         setAccessToken(data.accessToken);
 
-        // Store admin info in localStorage
+        // Store admin info in localStorage and clear normal user session so admin guards read the right role.
         localStorage.setItem('admin_user', JSON.stringify(data.user));
+        localStorage.removeItem('auth_user');
 
         return { success: true, tokens: data };
     } catch (error: any) {
@@ -385,7 +386,7 @@ export function generateUUID(): string {
  */
 export function getStoredUser(): AuthUser | null {
     try {
-        const userStr = localStorage.getItem('auth_user') || localStorage.getItem('admin_user');
+        const userStr = localStorage.getItem('admin_user') || localStorage.getItem('auth_user');
         return userStr ? JSON.parse(userStr) : null;
     } catch (error) {
         return null;

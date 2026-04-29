@@ -1,0 +1,608 @@
+openapi: 3.0.3
+info:
+  title: LINKY Backend API
+  version: 0.1.0
+  description: Current LINKY API surface for user, creator, admin, wallet, payment, call, gift, and simulation flows.
+servers:
+  - url: http://127.0.0.1:5090
+    description: Local API
+  - url: http://34.133.29.252:5082
+    description: Current GCP VM
+tags:
+  - name: Auth
+  - name: Admin
+  - name: Creator
+  - name: Wallet
+  - name: Payments
+  - name: Calls
+  - name: Gifts
+  - name: Simulation
+paths:
+  /api/zego/token:
+    post:
+      tags: [Calls]
+      summary: Create ZEGOCLOUD room token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, roomId]
+              properties:
+                userId: { type: string }
+                roomId: { type: string }
+                canPublish: { type: boolean, default: true }
+      responses:
+        "200": { description: ZEGOCLOUD token response }
+  /api/auth/send-otp:
+    post:
+      tags: [Auth]
+      summary: Send OTP for user login/signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone]
+              properties:
+                phone: { type: string }
+      responses:
+        "200": { description: OTP sent }
+  /api/auth/verify-otp:
+    post:
+      tags: [Auth]
+      summary: Verify OTP and login user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [phone, otp]
+              properties:
+                phone: { type: string }
+                otp: { type: string }
+                deviceId: { type: string }
+      responses:
+        "200": { description: User login response }
+  /api/auth/refresh:
+    post:
+      tags: [Auth]
+      summary: Refresh user access token
+      responses:
+        "200": { description: New access token }
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: Logout user
+      responses:
+        "200": { description: Logout success }
+  /api/auth/verify:
+    get:
+      tags: [Auth]
+      summary: Verify access token
+      responses:
+        "200": { description: Session valid }
+  /api/auth/admin/login:
+    post:
+      tags: [Admin, Auth]
+      summary: Login admin/super/support user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                username: { type: string }
+                password: { type: string }
+                phone: { type: string }
+                otp: { type: string }
+      responses:
+        "200": { description: Admin login response }
+  /api/auth/admin/logout:
+    post:
+      tags: [Admin, Auth]
+      summary: Logout admin
+      responses:
+        "200": { description: Logout success }
+  /api/creator/applications:
+    post:
+      tags: [Creator]
+      summary: Submit creator or agent KYC application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreatorApplicationRequest"
+      responses:
+        "201": { description: Application submitted }
+  /api/admin/kyc-applications:
+    get:
+      tags: [Admin, Creator]
+      summary: List pending KYC applications
+      responses:
+        "200": { description: Pending creator and agent applications }
+  /api/admin/approve:
+    post:
+      tags: [Admin]
+      summary: Approve application
+      requestBody:
+        $ref: "#/components/requestBodies/ApplicationId"
+      responses:
+        "200": { description: Approval result }
+  /api/admin/reject:
+    post:
+      tags: [Admin]
+      summary: Reject application
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id]
+              properties:
+                id: { type: string }
+                reason: { type: string }
+      responses:
+        "200": { description: Rejection result }
+  /api/admin/ban:
+    post:
+      tags: [Admin]
+      summary: Ban application/account
+      requestBody:
+        $ref: "#/components/requestBodies/ApplicationId"
+      responses:
+        "200": { description: Ban result }
+  /api/admin/update-rate:
+    post:
+      tags: [Admin]
+      summary: Update creator per-minute rate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [creatorId, rate]
+              properties:
+                creatorId: { type: string }
+                rate: { type: number, minimum: 10, maximum: 500 }
+      responses:
+        "200": { description: Updated creator rate }
+  /api/admin/update-commission:
+    post:
+      tags: [Admin]
+      summary: Update agency commission percentage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [agencyId, commission]
+              properties:
+                agencyId: { type: string }
+                commission: { type: number, minimum: 1, maximum: 80 }
+      responses:
+        "200": { description: Updated agency commission }
+  /api/wallet/{userId}:
+    get:
+      tags: [Wallet]
+      summary: Get or create wallet
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200":
+          description: Wallet
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Wallet"
+  /api/wallet/{userId}/transactions:
+    get:
+      tags: [Wallet]
+      summary: List wallet transactions
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+        - name: type
+          in: query
+          schema: { type: string, enum: [recharge, call, gift, refund] }
+        - name: status
+          in: query
+          schema: { type: string }
+        - name: paymentMethod
+          in: query
+          schema: { type: string }
+        - name: limit
+          in: query
+          schema: { type: integer }
+        - name: offset
+          in: query
+          schema: { type: integer }
+      responses:
+        "200": { description: Transaction list }
+  /api/razorpay/orders:
+    post:
+      tags: [Payments]
+      summary: Create Razorpay order for wallet recharge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, amount, paymentMethod]
+              properties:
+                userId: { type: string }
+                amount: { type: number }
+                paymentMethod: { type: string, enum: [upi, card, netbanking] }
+      responses:
+        "200": { description: Razorpay order }
+  /api/razorpay/verify:
+    post:
+      tags: [Payments]
+      summary: Verify Razorpay signature and credit wallet
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId, razorpay_order_id, razorpay_payment_id, razorpay_signature]
+              properties:
+                userId: { type: string }
+                paymentMethod: { type: string }
+                razorpay_order_id: { type: string }
+                razorpay_payment_id: { type: string }
+                razorpay_signature: { type: string }
+      responses:
+        "200": { description: Wallet credited }
+  /api/wallet/recharge:
+    post:
+      tags: [Payments, Wallet]
+      summary: Legacy mock recharge
+      responses:
+        "200": { description: Mock recharge result }
+  /api/payments/{transactionId}/status:
+    get:
+      tags: [Payments]
+      summary: Get mock payment status
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Payment status }
+  /api/payments/{transactionId}/cancel:
+    post:
+      tags: [Payments]
+      summary: Cancel mock payment
+      parameters:
+        - name: transactionId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Cancelled payment }
+  /api/payments/refund:
+    post:
+      tags: [Payments]
+      summary: Refund mock payment
+      responses:
+        "200": { description: Refund result }
+  /api/wallet/deduct-call:
+    post:
+      tags: [Calls, Wallet]
+      summary: Deduct call cost and credit creator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeductCallRequest"
+      responses:
+        "200": { description: Call billing result }
+  /api/call-logs/user/{userId}:
+    get:
+      tags: [Calls]
+      summary: Get user call logs
+      parameters:
+        - $ref: "#/components/parameters/UserId"
+      responses:
+        "200": { description: User call logs }
+  /api/call-logs/creator/{creatorId}:
+    get:
+      tags: [Calls, Creator]
+      summary: Get creator call logs
+      parameters:
+        - $ref: "#/components/parameters/CreatorId"
+      responses:
+        "200": { description: Creator call logs }
+  /api/creator/{creatorId}/earnings:
+    get:
+      tags: [Creator, Wallet]
+      summary: Get creator wallet and earning totals
+      parameters:
+        - $ref: "#/components/parameters/CreatorId"
+      responses:
+        "200": { description: Creator earnings }
+  /api/creator/{creatorId}/status:
+    get:
+      tags: [Creator]
+      summary: Get creator status
+      parameters:
+        - $ref: "#/components/parameters/CreatorId"
+      responses:
+        "200": { description: Creator status }
+    post:
+      tags: [Creator]
+      summary: Update creator status
+      parameters:
+        - $ref: "#/components/parameters/CreatorId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [status]
+              properties:
+                status: { type: string, enum: [available, on_call, offline] }
+      responses:
+        "200": { description: Updated creator status }
+  /api/gifts:
+    get:
+      tags: [Gifts]
+      summary: List active gifts
+      responses:
+        "200": { description: Active gift catalog }
+  /api/gifts/send:
+    post:
+      tags: [Gifts, Wallet]
+      summary: Send gift to creator
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [senderId, recipientId, giftId, quantity]
+              properties:
+                senderId: { type: string }
+                recipientId: { type: string }
+                giftId: { type: string }
+                quantity: { type: integer }
+                message: { type: string }
+      responses:
+        "200": { description: Gift sent }
+  /api/admin/gifts:
+    get:
+      tags: [Admin, Gifts]
+      summary: List all gifts
+      responses:
+        "200": { description: Gift list }
+    post:
+      tags: [Admin, Gifts]
+      summary: Create gift
+      responses:
+        "200": { description: Created gift }
+  /api/admin/gifts/{id}:
+    patch:
+      tags: [Admin, Gifts]
+      summary: Update gift
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Updated gift }
+    delete:
+      tags: [Admin, Gifts]
+      summary: Delete gift
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200": { description: Deleted gift }
+  /api/bonus/calculate:
+    get:
+      tags: [Wallet]
+      summary: Calculate recharge bonus
+      parameters:
+        - name: amount
+          in: query
+          required: true
+          schema: { type: number }
+      responses:
+        "200": { description: Bonus calculation }
+  /api/simulation/status:
+    get:
+      tags: [Simulation]
+      summary: Get simulator status
+      responses:
+        "200": { description: Simulator status }
+  /api/simulation/toggle:
+    post:
+      tags: [Simulation]
+      summary: Toggle simulator
+      responses:
+        "200": { description: Toggle result }
+  /api/simulation/config:
+    get:
+      tags: [Simulation]
+      summary: Get simulator config
+      responses:
+        "200": { description: Simulator config }
+    patch:
+      tags: [Simulation]
+      summary: Update simulator config
+      responses:
+        "200": { description: Updated config }
+  /api/simulation/session:
+    post:
+      tags: [Simulation]
+      summary: Create simulation session
+      responses:
+        "200": { description: Session }
+  /api/simulation/session/{sessionId}:
+    get:
+      tags: [Simulation]
+      summary: Get simulation session
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200": { description: Session }
+    delete:
+      tags: [Simulation]
+      summary: Delete simulation session
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200": { description: Delete result }
+  /api/simulation/sessions/active:
+    get:
+      tags: [Simulation]
+      summary: List active simulation sessions
+      responses:
+        "200": { description: Active sessions }
+  /api/simulation/sessions:
+    get:
+      tags: [Simulation]
+      summary: List all simulation sessions
+      responses:
+        "200": { description: Sessions }
+    delete:
+      tags: [Simulation]
+      summary: Clear all simulation sessions
+      responses:
+        "200": { description: Clear result }
+  /api/simulation/call/initiate:
+    post:
+      tags: [Simulation]
+      summary: Initiate simulated call
+      responses:
+        "200": { description: Session }
+  /api/simulation/call/connect:
+    post:
+      tags: [Simulation]
+      summary: Connect simulated call
+      responses:
+        "200": { description: Session }
+  /api/simulation/call/end:
+    post:
+      tags: [Simulation]
+      summary: End simulated call
+      responses:
+        "200": { description: Session }
+  /api/simulation/call/fail:
+    post:
+      tags: [Simulation]
+      summary: Fail simulated call
+      responses:
+        "200": { description: Session }
+  /api/simulation/call/drop:
+    post:
+      tags: [Simulation]
+      summary: Drop simulated call
+      responses:
+        "200": { description: Session }
+  /api/simulation/call/{sessionId}/quality:
+    patch:
+      tags: [Simulation]
+      summary: Update simulated call quality
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200": { description: Updated session }
+  /api/simulation/call/{sessionId}/network:
+    patch:
+      tags: [Simulation]
+      summary: Update simulated network condition
+      parameters:
+        - $ref: "#/components/parameters/SessionId"
+      responses:
+        "200": { description: Updated session }
+  /api/simulation/stats:
+    get:
+      tags: [Simulation]
+      summary: Get simulator stats
+      responses:
+        "200": { description: Stats }
+  /api/simulation/stats/reset:
+    post:
+      tags: [Simulation]
+      summary: Reset simulator stats
+      responses:
+        "200": { description: Reset result }
+components:
+  parameters:
+    UserId:
+      name: userId
+      in: path
+      required: true
+      schema: { type: string }
+    CreatorId:
+      name: creatorId
+      in: path
+      required: true
+      schema: { type: string }
+    SessionId:
+      name: sessionId
+      in: path
+      required: true
+      schema: { type: string }
+  requestBodies:
+    ApplicationId:
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            required: [id]
+            properties:
+              id: { type: string }
+  schemas:
+    Wallet:
+      type: object
+      properties:
+        id: { type: string }
+        userId: { type: string }
+        balance: { type: number }
+        updatedAt: { type: string, format: date-time }
+    CreatorApplicationRequest:
+      type: object
+      required: [name, bankAccountNumber, bankIfscCode, bankAccountName, aadharNumber, panNumber]
+      properties:
+        name: { type: string }
+        email: { type: string }
+        mobile: { type: string }
+        role: { type: string, enum: [creator, agent] }
+        bankAccountNumber: { type: string }
+        bankIfscCode: { type: string }
+        bankAccountName: { type: string }
+        aadharNumber: { type: string }
+        panNumber: { type: string }
+        referralCode: { type: string }
+    DeductCallRequest:
+      type: object
+      required: [userId, creatorId, totalCost]
+      properties:
+        userId: { type: string }
+        userName: { type: string }
+        creatorId: { type: string }
+        creatorName: { type: string }
+        callType: { type: string, enum: [audio, video] }
+        durationSeconds: { type: integer }
+        pricePerMinute: { type: number }
+        callCost: { type: number }
+        giftCost: { type: number }
+        totalCost: { type: number }

@@ -21,7 +21,7 @@ interface StoredTransaction {
   amount: number;
   currency: string;
   status: 'pending' | 'processing' | 'success' | 'failed' | 'cancelled' | 'refunded';
-  paymentMethod?: 'upi' | 'card' | 'net_banking' | 'wallet';
+  paymentMethod?: 'upi' | 'card' | 'net_banking' | 'netbanking' | 'wallet';
   transactionId: string;
   gatewayTransactionId?: string;
   bonusAmount: number;
@@ -35,6 +35,7 @@ interface WalletOperation {
   operation: 'credit' | 'debit';
   amount: number;
   transactionId: string;
+  transactionType?: 'recharge' | 'call' | 'gift' | 'refund';
   description?: string;
   metadata?: Record<string, any>;
 }
@@ -78,7 +79,7 @@ export interface IStorage {
   createRechargeTransaction(transaction: {
     userId: string;
     amount: number;
-    paymentMethod: 'upi' | 'card' | 'net_banking' | 'wallet';
+    paymentMethod: 'upi' | 'card' | 'net_banking' | 'netbanking' | 'wallet';
     status?: 'pending' | 'success' | 'failed';
     transactionId?: string;
   }): Promise<void>;
@@ -89,6 +90,12 @@ export interface IStorage {
     type?: string;
     status?: string;
     paymentMethod?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<StoredTransaction[]>;
+  getAllTransactionHistory(options?: {
+    type?: string;
+    status?: string;
     limit?: number;
     offset?: number;
   }): Promise<StoredTransaction[]>;
@@ -116,15 +123,15 @@ export class MemStorage implements IStorage {
 
   private async initializeDefaultGifts() {
     const defaultGifts = [
-      { name: "Rose", imageUrl: "rose", price: 20, isActive: true },
-      { name: "Tulip", imageUrl: "tulip", price: 40, isActive: true },
-      { name: "Sunflower", imageUrl: "sunflower", price: 50, isActive: true },
-      { name: "Diamond", imageUrl: "diamond", price: 100, isActive: true },
-      { name: "Crown", imageUrl: "crown", price: 250, isActive: true },
-      { name: "Star", imageUrl: "star", price: 500, isActive: true },
-      { name: "Rocket", imageUrl: "rocket", price: 750, isActive: true },
-      { name: "Trophy", imageUrl: "trophy", price: 900, isActive: true },
-      { name: "Universe", imageUrl: "universe", price: 1000, isActive: true },
+      { name: "Rose", imageUrl: "rose", iconType: "Heart", amount: 20, isActive: "true", sortOrder: 1 },
+      { name: "Tulip", imageUrl: "tulip", iconType: "Sparkles", amount: 40, isActive: "true", sortOrder: 2 },
+      { name: "Sunflower", imageUrl: "sunflower", iconType: "Sun", amount: 50, isActive: "true", sortOrder: 3 },
+      { name: "Diamond", imageUrl: "diamond", iconType: "Gem", amount: 100, isActive: "true", sortOrder: 4 },
+      { name: "Crown", imageUrl: "crown", iconType: "Crown", amount: 250, isActive: "true", sortOrder: 5 },
+      { name: "Star", imageUrl: "star", iconType: "Star", amount: 500, isActive: "true", sortOrder: 6 },
+      { name: "Rocket", imageUrl: "rocket", iconType: "Rocket", amount: 750, isActive: "true", sortOrder: 7 },
+      { name: "Trophy", imageUrl: "trophy", iconType: "Trophy", amount: 900, isActive: "true", sortOrder: 8 },
+      { name: "Universe", imageUrl: "universe", iconType: "Star", amount: 1000, isActive: "true", sortOrder: 9 },
     ];
 
     for (const gift of defaultGifts) {
@@ -265,7 +272,7 @@ export class MemStorage implements IStorage {
       const transaction: StoredTransaction = {
         id: randomUUID(),
         userId: operation.userId,
-        type: operation.operation === 'credit' ? 'recharge' : 'call',
+        type: operation.transactionType || (operation.operation === 'credit' ? 'recharge' : 'call'),
         amount: operation.amount,
         currency: 'INR',
         status: 'success',
@@ -349,7 +356,7 @@ export class MemStorage implements IStorage {
 
   async getActiveGifts(): Promise<GiftConfig[]> {
     return Array.from(this.gifts.values())
-      .filter(g => g.isActive);
+      .filter(g => g.isActive === "true");
   }
 
   async getGift(id: string): Promise<GiftConfig | undefined> {
@@ -360,12 +367,15 @@ export class MemStorage implements IStorage {
     const id = randomUUID();
     const newGift: GiftConfig = {
       id,
+      amount: Number(gift.amount),
       name: gift.name,
       imageUrl: gift.imageUrl,
-      price: gift.price,
-      isActive: gift.isActive !== undefined ? gift.isActive : true,
+      iconType: gift.iconType || null,
+      isActive: gift.isActive !== undefined ? String(gift.isActive) : "true",
+      sortOrder: gift.sortOrder || 0,
       createdAt: new Date(),
-      createdBy: gift.createdBy || null,
+      updatedAt: new Date(),
+      updatedBy: gift.updatedBy || null,
     };
     this.gifts.set(id, newGift);
     return newGift;
@@ -389,20 +399,20 @@ export class MemStorage implements IStorage {
   }
 
   // Transaction operations
-  async createGiftTransaction(transaction: InsertGiftTransaction): Promise<void> {
+  async createGiftTransaction(transaction: InsertGiftTransaction | any): Promise<void> {
     const transactionRecord: StoredTransaction = {
       id: randomUUID(),
       userId: transaction.senderId,
       type: 'gift',
-      amount: transaction.totalAmount,
+      amount: Number(transaction.totalAmount ?? transaction.amount ?? 0),
       currency: 'INR',
       status: 'success',
       transactionId: `GIFT${Date.now()}`,
       bonusAmount: 0,
       metadata: {
-        recipientId: transaction.receiverId,
+        recipientId: transaction.receiverId ?? transaction.recipientId,
         giftId: transaction.giftId,
-        quantity: transaction.quantity,
+        quantity: transaction.quantity ?? 1,
         message: transaction.message,
       },
       createdAt: new Date(),
@@ -414,7 +424,7 @@ export class MemStorage implements IStorage {
   async createRechargeTransaction(transaction: {
     userId: string;
     amount: number;
-    paymentMethod: 'upi' | 'card' | 'net_banking' | 'wallet';
+    paymentMethod: 'upi' | 'card' | 'net_banking' | 'netbanking' | 'wallet';
     status?: 'pending' | 'success' | 'failed';
     transactionId?: string;
   }): Promise<void> {
@@ -485,6 +495,28 @@ export class MemStorage implements IStorage {
     const limit = options?.limit || 20;
     const offset = options?.offset || 0;
 
+    return transactions.slice(offset, offset + limit);
+  }
+
+  async getAllTransactionHistory(options?: {
+    type?: string;
+    status?: string;
+    limit?: number;
+    offset?: number;
+  }): Promise<StoredTransaction[]> {
+    let transactions = Array.from(this.transactions.values());
+
+    if (options?.type) {
+      transactions = transactions.filter(t => t.type === options.type);
+    }
+    if (options?.status) {
+      transactions = transactions.filter(t => t.status === options.status);
+    }
+
+    transactions.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+
+    const limit = options?.limit || 100;
+    const offset = options?.offset || 0;
     return transactions.slice(offset, offset + limit);
   }
 

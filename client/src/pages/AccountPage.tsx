@@ -51,38 +51,13 @@ import {
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
-import { apiRequest, queryClient } from "@/lib/queryClient";
+import { queryClient } from "@/lib/queryClient";
 import { getTalktimeTransactions, recordRechargeTransaction, subscribeToTalktimeTransactions } from "@/lib/wallet-transactions";
 import { APP_LANGUAGES, useAppLanguage } from "@/lib/language";
-import { addLocalWalletBalance } from "@/hooks/useWallet";
+import { startRazorpayRecharge } from "@/lib/razorpay";
 import { getUserCallLogs, subscribeToCallLogs } from "@/lib/call-logs";
 import { ProfilePicturePicker } from "@/components/ProfilePicturePicker";
 import { getStoredProfilePicture, saveStoredProfilePicture, USER_PROFILE_PICTURE_KEY } from "@/lib/profile-pictures";
-
-function createLocalRechargeResponse(amount: number, paymentMethod: string, userId: string) {
-  const transactionId = `LOCAL${Date.now()}`;
-
-  return {
-    success: true,
-    wallet: {
-      id: `wallet_${userId}`,
-      userId,
-      balance: amount.toFixed(2),
-      updatedAt: new Date(),
-    },
-    transaction: {
-      transactionId,
-      status: "success",
-      paymentMethod,
-      amount,
-      currency: "INR",
-    },
-    totalAmount: amount,
-    status: "success",
-    transactionId,
-    message: "Payment completed in local demo mode.",
-  };
-}
 
 export default function AccountPage() {
   const [, setLocation] = useLocation();
@@ -127,6 +102,27 @@ export default function AccountPage() {
     });
   };
 
+  const normalizeTransaction = (tx: any) => {
+    const createdAt = tx.createdAt || new Date().toISOString();
+    const amount = Number(tx.amount || 0);
+    const bonus = Number(tx.bonus || tx.bonusAmount || 0);
+    const isCall = tx.type === "call";
+    const isGift = tx.type === "gift";
+    return {
+      ...tx,
+      date: tx.date || new Date(createdAt).toLocaleString("en-IN", { dateStyle: "medium", timeStyle: "short" }),
+      amount,
+      bonus,
+      total: tx.total !== undefined ? Number(tx.total) : (isCall || isGift) ? -amount : amount,
+      paymentMethod: tx.paymentMethod || tx.metadata?.paymentMethod || (isCall
+        ? `Call with ${tx.metadata?.creatorName || tx.metadata?.creatorId || "creator"}`
+        : isGift
+          ? `Gift sent to creator ${tx.metadata?.recipientId || ""}`.trim()
+          : undefined),
+      status: tx.status || "success",
+    };
+  };
+
   // Fetch transactions from API
   useEffect(() => {
     const fetchTransactions = async () => {
@@ -137,7 +133,7 @@ export default function AccountPage() {
         if (response.ok) {
           const data = await response.json();
           const apiTransactions = Array.isArray(data) ? data : data.transactions || [];
-          setTransactions(apiTransactions.length > 0 ? apiTransactions : getTalktimeTransactions());
+          setTransactions(apiTransactions.length > 0 ? apiTransactions.map(normalizeTransaction) : getTalktimeTransactions());
         } else {
           setTransactions(getTalktimeTransactions());
         }
@@ -152,8 +148,28 @@ export default function AccountPage() {
   }, []);
 
   useEffect(() => {
-    setCallLogs(getUserCallLogs());
-    return subscribeToCallLogs(() => setCallLogs(getUserCallLogs()));
+    const userId = localStorage.getItem("linky_device_id") || "user_001";
+    const fetchCallLogs = async () => {
+      try {
+        const response = await fetch(`/api/call-logs/user/${userId}`);
+        if (response.ok) {
+          const data = await response.json();
+          setCallLogs(Array.isArray(data) && data.length > 0 ? data : getUserCallLogs());
+          return;
+        }
+      } catch {
+        // Fall back to browser logs.
+      }
+      setCallLogs(getUserCallLogs());
+    };
+
+    fetchCallLogs();
+    const interval = setInterval(fetchCallLogs, 5000);
+    const unsubscribe = subscribeToCallLogs(fetchCallLogs);
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {
@@ -224,17 +240,11 @@ export default function AccountPage() {
         throw new Error("Invalid amount. Amount must be a positive number.");
       }
 
-      try {
-        // BUG-003 FIX: Send amount as number, not string
-        const response = await apiRequest("POST", "/api/wallet/recharge", {
-          userId,
-          amount: data.amount,
-          paymentMethod: data.paymentMethod,
-        });
-        return response.json();
-      } catch {
-        return createLocalRechargeResponse(data.amount, data.paymentMethod, userId);
-      }
+      return await startRazorpayRecharge({
+        userId,
+        amount: data.amount,
+        paymentMethod: data.paymentMethod,
+      });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
@@ -251,19 +261,16 @@ export default function AccountPage() {
       description: `Redirecting to ${paymentMethods.find(m => m.id === method)?.name} for ₹${selectedPack.pay}...`,
     });
 
-    setTimeout(() => {
-      // BUG-004 FIX: Use selectedPack.pay (amount to pay) instead of selectedPack.get (amount received)
-      rechargeMutation.mutate(
-        { amount: selectedPack.pay, paymentMethod: method },
-        {
-          onSuccess: () => {
+    rechargeMutation.mutate(
+      { amount: selectedPack.pay, paymentMethod: method },
+      {
+        onSuccess: (result) => {
             const paymentMethod = paymentMethods.find(m => m.id === method)?.name || method;
-            addLocalWalletBalance(selectedPack.get);
             const updatedTransactions = recordRechargeTransaction({
-              transactionId: `LOCAL${Date.now()}`,
+              transactionId: result.transactionId || result.transaction?.transactionId || `RZP${Date.now()}`,
               amount: selectedPack.pay,
-              bonus: selectedPack.bonus,
-              total: selectedPack.get,
+              bonus: result.bonus ?? selectedPack.bonus,
+              total: result.totalAmount ?? selectedPack.get,
               paymentMethod,
               status: "success",
             });
@@ -271,23 +278,22 @@ export default function AccountPage() {
 
             toast({
               title: "Payment Successful!",
-              description: `₹${selectedPack.get} has been added to your wallet.`,
+              description: `₹${result.totalAmount ?? selectedPack.get} has been added to your wallet.`,
             });
             setTimeout(() => {
               setShowRechargeModal(false);
               setSelectedPack(null);
             }, 1500);
-          },
-          onError: (error) => {
+        },
+        onError: (error) => {
             toast({
               title: "Payment Failed",
               description: error.message || "Failed to process payment. Please try again.",
               variant: "destructive",
             });
-          },
-        }
-      );
-    }, 1500);
+        },
+      }
+    );
   };
 
   const handleCloseRechargeModal = () => {
@@ -625,7 +631,7 @@ export default function AccountPage() {
                         >
                           <div>
                             <div className="font-medium">
-                              {tx.type === "call" ? "-" : ""}₹{Math.abs(Number(tx.total)).toFixed(2)}
+                              {(tx.type === "call" || tx.type === "gift") ? "-" : ""}₹{Math.abs(Number(tx.total)).toFixed(2)}
                             </div>
                             <div className="text-xs text-muted-foreground">{tx.date}</div>
                             {tx.paymentMethod && (
@@ -635,8 +641,8 @@ export default function AccountPage() {
                             )}
                           </div>
                           <div className="text-right">
-                            {tx.type === "call" ? (
-                              <div className="text-sm text-destructive">Call charge</div>
+                            {tx.type === "call" || tx.type === "gift" ? (
+                              <div className="text-sm text-destructive">{tx.type === "gift" ? "Gift sent" : "Call charge"}</div>
                             ) : (
                               <>
                                 <div className="text-sm">{t("paid")} ₹{Number(tx.amount).toFixed(2)}</div>

@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Shield, Phone, Lock } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { adminLogin } from "@/lib/auth";
 
 export default function AdminLogin() {
   const [, setLocation] = useLocation();
@@ -32,7 +33,7 @@ export default function AdminLogin() {
     setStep("otp");
   };
 
-  const handleVerifyOTP = () => {
+  const handleVerifyOTP = async () => {
     if (!otp || otp.length !== 6) {
       toast({
         title: "Invalid OTP",
@@ -52,14 +53,24 @@ export default function AdminLogin() {
     // Debug logging removed for production - use proper logging service if needed
 
     if (cleanMobileNumber === validMobile && otp === validOtp) {
+      const loginResult = await adminLogin(cleanMobileNumber, validOtp);
+      if (!loginResult.success || loginResult.tokens?.user.role !== "super_user") {
+        toast({
+          title: "Access Denied",
+          description: loginResult.error || "Could not create super user session.",
+          variant: "destructive",
+        });
+        return;
+      }
+
       // Set admin registration
       localStorage.setItem("admin_registered", "true");
-      localStorage.setItem("admin_role", "admin");
+      localStorage.setItem("admin_role", "super_user");
       localStorage.setItem("admin_mobile", cleanMobileNumber);
 
       toast({
         title: "Login Successful",
-        description: "Welcome back, Admin!",
+        description: "Welcome back, Super User!",
       });
       setTimeout(() => {
         setLocation("/admin/dashboard");

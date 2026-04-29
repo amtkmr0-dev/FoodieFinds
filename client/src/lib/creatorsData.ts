@@ -18,6 +18,9 @@ export interface Creator {
   mediaVideo?: string;
 }
 
+const creatorMedia = (creatorId: string, count = 3) =>
+  Array.from({ length: count }, (_, index) => `/api/creator-media/${creatorId}/${index}`);
+
 const creatorProfiles: Omit<Creator, "image">[] = [
   {
     id: "1",
@@ -34,11 +37,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Reading", "Yoga", "Traveling", "Cooking"],
     foodPreferences: ["Vegetarian", "Italian cuisine", "Indian sweets"],
     sportsInterests: ["Cricket", "Badminton", "Running"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1517841905240-472988babdf9?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("1"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-woman-smiling-at-camera-8031/preview",
   },
   {
@@ -56,11 +55,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Gaming", "Photography", "Blogging"],
     foodPreferences: ["Non-vegetarian", "North Indian", "Chinese"],
     sportsInterests: ["Football", "Chess", "Table tennis"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("2"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-working-on-a-laptop-1571/preview",
   },
   {
@@ -78,11 +73,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Public speaking", "Writing", "Gardening"],
     foodPreferences: ["Vegetarian", "South Indian", "Continental"],
     sportsInterests: ["Tennis", "Swimming", "Cycling"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("3"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-businesswoman-smiling-4284/preview",
   },
   {
@@ -100,11 +91,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Reading", "Playing guitar", "Hiking"],
     foodPreferences: ["Vegetarian", "Gujarati cuisine", "Street food"],
     sportsInterests: ["Cricket", "Volleyball", "Jogging"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1492562080023-ab3db95bfbce?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1560250097-0b93528c311a?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("4"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-man-talking-on-the-phone-3701/preview",
   },
   {
@@ -122,11 +109,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Sketching", "Shopping", "Dancing", "Photography"],
     foodPreferences: ["Vegetarian", "Punjabi cuisine", "Fusion food"],
     sportsInterests: ["Zumba", "Yoga", "Badminton"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1487412720507-e7ab37603c6f?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1502823403499-6ccfcf4fb453?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("5"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-fashion-model-3155/preview",
   },
   {
@@ -144,11 +127,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Gym training", "Sports", "Cooking healthy meals"],
     foodPreferences: ["High protein", "Salads", "Smoothies"],
     sportsInterests: ["Bodybuilding", "Boxing", "Running", "Basketball"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1531891437562-4301cf35b7e4?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1519345182560-3f2917c472ef?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("6"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-man-doing-workout-2635/preview",
   },
   {
@@ -166,11 +145,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Meditation", "Reading", "Painting", "Listening to music"],
     foodPreferences: ["Vegetarian", "Bengali cuisine", "Organic food"],
     sportsInterests: ["Walking", "Swimming", "Yoga"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1544723795-3fb6469f5b39?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1548142813-c348350df52b?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1531123897727-8f129e1688ce?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("7"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-woman-meditating-1584/preview",
   },
   {
@@ -188,11 +163,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Traveling", "Photography", "Blogging", "Music"],
     foodPreferences: ["Non-vegetarian", "Mughlai", "Italian"],
     sportsInterests: ["Cricket", "Football", "Snooker"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1527980965255-d3b416303d12?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1507591064344-4c6ce005b128?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("8"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-man-with-camera-4985/preview",
   },
   {
@@ -210,11 +181,7 @@ const creatorProfiles: Omit<Creator, "image">[] = [
     hobbies: ["Dancing", "Teaching", "Traveling", "Cooking"],
     foodPreferences: ["Vegetarian", "South Indian", "Traditional sweets"],
     sportsInterests: ["Badminton", "Swimming", "Yoga"],
-    mediaImages: [
-      "https://images.unsplash.com/photo-1524250502761-1ac6f2e30d43?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1512316609839-ce289d3eba0a?w=800&h=800&fit=crop",
-      "https://images.unsplash.com/photo-1517365830460-955ce3ccd263?w=800&h=800&fit=crop",
-    ],
+    mediaImages: creatorMedia("9"),
     mediaVideo: "https://storage.coverr.co/videos/coverr-woman-dancing-5550/preview",
   },
 ];

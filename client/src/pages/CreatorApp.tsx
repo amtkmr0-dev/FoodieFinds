@@ -60,7 +60,47 @@ import {
 } from "lucide-react";
 import { getCreatorCallLogs, subscribeToCallLogs } from "@/lib/call-logs";
 import { ProfilePicturePicker } from "@/components/ProfilePicturePicker";
-import { CREATOR_PROFILE_PICTURE_KEY, getStoredProfilePicture, saveStoredProfilePicture } from "@/lib/profile-pictures";
+import { getStoredProfilePicture, saveStoredProfilePicture } from "@/lib/profile-pictures";
+import { publishCallSignal, subscribeToCallSignals, type SimulatedIncomingCall } from "@/lib/call-signaling";
+import {
+  getLocalCreatorStatus,
+  subscribeToCreatorStatus,
+  updateCreatorStatus,
+  type CreatorCallStatus,
+} from "@/lib/creator-status";
+import { useLocation } from "wouter";
+import { creatorsData, type Creator } from "@/lib/creatorsData";
+
+type ActiveCreatorAccount = {
+  otp?: string;
+  name: string;
+  creatorId: string;
+};
+
+function getActiveCreatorAccount(): ActiveCreatorAccount | null {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const stored = localStorage.getItem("creator_active_account");
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+function getActiveCreatorProfile(account: ActiveCreatorAccount | null): Creator {
+  if (!account) return creatorsData[0];
+
+  return (
+    creatorsData.find((creator) => creator.name === account.name) ||
+    creatorsData.find((creator) => creator.id === account.creatorId) ||
+    creatorsData[0]
+  );
+}
+
+function getCreatorProfilePictureKey(account: ActiveCreatorAccount | null, creator: Creator) {
+  return `linky_creator_profile_picture_${account?.creatorId || creator.id}`;
+}
 
 export default function CreatorApp() {
   const [role, setRole] = useState<"creator" | "agency">("creator");
@@ -71,20 +111,25 @@ export default function CreatorApp() {
   const [showProfilePicturePicker, setShowProfilePicturePicker] = useState(false);
   const [incomingCallType, setIncomingCallType] = useState<"audio" | "video">("audio");
   const [incomingCallerName, setIncomingCallerName] = useState("");
+  const [incomingCall, setIncomingCall] = useState<SimulatedIncomingCall | null>(null);
   const [allowedCallTypes, setAllowedCallTypes] = useState<"audio" | "video" | "both">("both");
   const { toast } = useToast();
+  const [, setLocation] = useLocation();
+  const activeCreatorAccount = getActiveCreatorAccount();
+  const activeCreatorProfile = getActiveCreatorProfile(activeCreatorAccount);
+  const creatorProfilePictureKey = getCreatorProfilePictureKey(activeCreatorAccount, activeCreatorProfile);
 
   // Profile state
   const [profileData, setProfileData] = useState({
-    name: "Sarah Johnson",
-    email: "sarah@example.com",
-    mobile: "+91 9876543210",
-    profilePicture: getStoredProfilePicture(CREATOR_PROFILE_PICTURE_KEY),
+    name: activeCreatorProfile.name,
+    email: `${activeCreatorProfile.name.toLowerCase().replace(/\s+/g, ".")}@example.com`,
+    mobile: activeCreatorAccount ? `+91 ${localStorage.getItem("creator_mobile") || ""}`.trim() : "+91 9876543210",
+    profilePicture: getStoredProfilePicture(creatorProfilePictureKey, activeCreatorProfile.image),
   });
 
   // Bank details state
   const [bankData, setBankData] = useState({
-    accountName: "Sarah Johnson",
+    accountName: activeCreatorProfile.name,
     accountNumber: "1234567890",
     ifscCode: "SBIN0001234",
     verified: true,
@@ -95,17 +140,44 @@ export default function CreatorApp() {
 
   // Random Match setting
   const [randomMatchEnabled, setRandomMatchEnabled] = useState(true);
+  const [serverEarnings, setServerEarnings] = useState<number | null>(null);
+  const [creatorCallStatus, setCreatorCallStatus] = useState<CreatorCallStatus>(
+    () => getLocalCreatorStatus(activeCreatorProfile.id).status
+  );
+
+  const handleLogout = () => {
+    [
+      "creator_registered",
+      "creator_approval_status",
+      "creator_mobile",
+      "creator_active_account",
+      "agent_registered",
+      "agent_approval_status",
+      "agent_mobile",
+      "rejection_reason",
+    ].forEach((key) => localStorage.removeItem(key));
+
+    setIsLive(false);
+    setShowIncomingCall(false);
+    setIncomingCall(null);
+
+    toast({
+      title: "Logged out",
+      description: "You have been signed out of the creator app.",
+    });
+    setLocation("/creator/login");
+  };
 
   // Mock data
   const creatorStats = {
-    earningsToday: 2340,
+    earningsToday: serverEarnings ?? 2340,
     earningsThisWeek: 15670,
     earningsThisMonth: 54320,
     totalCalls: 45,
     callsToday: 12,
     giftsReceived: 127,
     giftsValue: 8900,
-    followers: 1250,
+    followers: activeCreatorProfile.followers,
     liveViewers: 0,
     pkWins: 23,
     pkLosses: 15,
@@ -148,8 +220,7 @@ export default function CreatorApp() {
   const [recentCalls, setRecentCalls] = useState(defaultRecentCalls);
 
   useEffect(() => {
-    const refreshCallLogs = () => {
-      const loggedCalls = getCreatorCallLogs().map((call) => ({
+    const mapCalls = (calls: any[]) => calls.map((call) => ({
         id: call.id,
         user: call.userName,
         duration: call.durationLabel,
@@ -159,12 +230,95 @@ export default function CreatorApp() {
         date: call.date,
       }));
 
+    const refreshCallLogs = async () => {
+      try {
+        const response = await fetch(`/api/call-logs/creator/${activeCreatorProfile.id}`);
+        if (response.ok) {
+          const data = await response.json();
+          const apiCalls = Array.isArray(data) ? mapCalls(data) : [];
+          setRecentCalls(apiCalls.length > 0 ? apiCalls : defaultRecentCalls);
+          return;
+        }
+      } catch {
+        // Fall back to browser call logs.
+      }
+
+      const loggedCalls = mapCalls(getCreatorCallLogs(activeCreatorProfile.id));
       setRecentCalls(loggedCalls.length > 0 ? loggedCalls : defaultRecentCalls);
     };
 
     refreshCallLogs();
-    return subscribeToCallLogs(refreshCallLogs);
+    const interval = setInterval(refreshCallLogs, 5000);
+    const unsubscribe = subscribeToCallLogs(refreshCallLogs);
+    return () => {
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, [activeCreatorProfile.id]);
+
+  useEffect(() => {
+    const refreshEarnings = async () => {
+      try {
+        const response = await fetch(`/api/creator/${activeCreatorProfile.id}/earnings`);
+        if (!response.ok) return;
+        const data = await response.json();
+        const balance = Number(data.balance || data.wallet?.balance || 0);
+        if (Number.isFinite(balance)) {
+          setServerEarnings(balance);
+        }
+      } catch {
+        // Keep local mock earnings while API is unavailable.
+      }
+    };
+
+    refreshEarnings();
+    const interval = setInterval(refreshEarnings, 5000);
+    return () => clearInterval(interval);
+  }, [activeCreatorProfile.id]);
+
+  useEffect(() => {
+    return subscribeToCallSignals((call) => {
+      if (call.status !== "ringing") return;
+
+      setIncomingCall(call);
+      setIncomingCallType(call.callType);
+      setIncomingCallerName(call.callerName || "User");
+      setShowIncomingCall(true);
+    });
   }, []);
+
+  useEffect(() => {
+    let disposed = false;
+
+    const refreshStatus = async () => {
+      try {
+        const response = await fetch(`/api/creator/${activeCreatorProfile.id}/status`);
+        if (!response.ok) return;
+        const data = await response.json();
+        if (!disposed && data.status) {
+          setCreatorCallStatus(data.status);
+        }
+      } catch {
+        if (!disposed) {
+          setCreatorCallStatus(getLocalCreatorStatus(activeCreatorProfile.id).status);
+        }
+      }
+    };
+
+    refreshStatus();
+    const interval = setInterval(refreshStatus, 5000);
+    const unsubscribe = subscribeToCreatorStatus((record) => {
+      if (record.creatorId === activeCreatorProfile.id) {
+        setCreatorCallStatus(record.status);
+      }
+    });
+
+    return () => {
+      disposed = true;
+      clearInterval(interval);
+      unsubscribe();
+    };
+  }, [activeCreatorProfile.id]);
 
   const pkBattleHistory = [
     { id: 1, opponent: "Creator_789", result: "win", points: 1250, gifts: 25, duration: "5 min" },
@@ -219,7 +373,7 @@ export default function CreatorApp() {
   };
 
   const handleProfilePictureSelect = (imageUrl: string) => {
-    saveStoredProfilePicture(CREATOR_PROFILE_PICTURE_KEY, imageUrl);
+    saveStoredProfilePicture(creatorProfilePictureKey, imageUrl);
     setProfileData((profile) => ({ ...profile, profilePicture: imageUrl }));
     toast({
       title: "Profile picture updated",
@@ -362,9 +516,15 @@ export default function CreatorApp() {
                   </div>
                   <div className="flex-1">
                     <h2 className="text-2xl font-bold mb-1">{profileData.name}</h2>
-                    <p className="text-muted-foreground">₹45/min • {creatorStats.followers.toLocaleString()} followers</p>
+                    <p className="text-muted-foreground">₹{activeCreatorProfile.price}/min • {creatorStats.followers.toLocaleString()} followers</p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge className="bg-success">Approved</Badge>
+                      <Badge
+                        variant={creatorCallStatus === "on_call" ? "destructive" : "outline"}
+                        className={creatorCallStatus === "available" ? "border-green-500 text-green-600" : ""}
+                      >
+                        status: {creatorCallStatus}
+                      </Badge>
                       <Badge variant="outline" className="flex items-center gap-1">
                         <Trophy className="w-3 h-3" />
                         Rank #{creatorStats.rank}
@@ -1452,7 +1612,12 @@ export default function CreatorApp() {
             {/* Logout */}
             <Card>
               <CardContent className="pt-6">
-                <Button variant="destructive" className="w-full" data-testid="button-logout">
+                <Button
+                  variant="destructive"
+                  className="w-full"
+                  onClick={handleLogout}
+                  data-testid="button-logout"
+                >
                   Logout
                 </Button>
               </CardContent>
@@ -1522,14 +1687,31 @@ export default function CreatorApp() {
           isOutgoing={false}
           showRejectConfirmation={true}
           onAccept={() => {
+            if (!incomingCall) return;
+            publishCallSignal({ ...incomingCall, status: "accepted", createdAt: Date.now() });
+            updateCreatorStatus(incomingCall.creatorId, "on_call");
+            setCreatorCallStatus("on_call");
             setShowIncomingCall(false);
             toast({
               title: "Call Accepted",
               description: `You accepted the ${incomingCallType} call from ${incomingCallerName}`,
             });
+            const params = new URLSearchParams({
+              callType: incomingCall.callType,
+              roomId: incomingCall.roomId,
+              callerName: incomingCall.callerName,
+              price: String(incomingCall.pricePerMinute),
+            });
+            setLocation(`/creator/call/${incomingCall.creatorId}?${params.toString()}`);
           }}
           onReject={() => {
+            if (incomingCall) {
+              publishCallSignal({ ...incomingCall, status: "rejected", createdAt: Date.now() });
+              updateCreatorStatus(incomingCall.creatorId, "available");
+              setCreatorCallStatus("available");
+            }
             setShowIncomingCall(false);
+            setIncomingCall(null);
             toast({
               title: "Call Rejected",
               description: `You rejected the ${incomingCallType} call from ${incomingCallerName}`,

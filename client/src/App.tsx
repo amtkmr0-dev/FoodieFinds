@@ -64,12 +64,31 @@ function CallInterfaceWrapper() {
   );
 }
 
+function CreatorCallInterfaceWrapper() {
+  const [, setLocation] = useLocation();
+  const params = useParams<{ id: string }>();
+  const creatorId = params.id || "creator";
+  const searchParams = new URLSearchParams(window.location.search);
+  const callType = (searchParams.get("callType") as "audio" | "video") || "audio";
+  const callerName = searchParams.get("callerName") || "User";
+  const pricePerMinute = Number(searchParams.get("price")) || 0;
+
+  return (
+    <CallInterface
+      creatorName={callerName}
+      creatorId={creatorId}
+      pricePerMinute={pricePerMinute}
+      callType={callType}
+      suppressOutgoingSignal={true}
+      zegoUserIdOverride={`creator_${creatorId}`}
+      billingEnabled={false}
+      onEndCall={() => setLocation("/creator")}
+    />
+  );
+}
+
 function Router() {
   const [selectedApp, setSelectedApp] = useState<"user" | "creator" | "admin" | null>(null);
-
-  if (!selectedApp) {
-    return <AppSelector onSelectApp={setSelectedApp} />;
-  }
 
   return (
     <Switch>
@@ -89,6 +108,7 @@ function Router() {
       <Route path="/agent/onboarding" component={CreatorOnboarding} />
       <Route path="/creator/pending-approval" component={PendingApproval} />
       <Route path="/agent/pending-approval" component={PendingApproval} />
+      <Route path="/creator/call/:id" component={CreatorCallInterfaceWrapper} />
 
       {/* User Routes */}
       <Route path="/user" component={UserApp} />

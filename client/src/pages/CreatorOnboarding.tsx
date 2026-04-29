@@ -72,24 +72,47 @@ export default function CreatorOnboarding() {
     }
   };
 
-  const handleSubmit = () => {
-    // Store registration data based on role
-    if (role === "creator") {
-      localStorage.setItem("creator_registered", "true");
-      localStorage.setItem("creator_approval_status", "pending");
-    } else {
-      localStorage.setItem("agent_registered", "true");
-      localStorage.setItem("agent_approval_status", "pending");
-    }
-    
-    toast({
-      title: "Registration Submitted",
-      description: "Your profile is under review. You'll be notified once approved.",
-    });
+  const handleSubmit = async () => {
+    try {
+      const mobile = localStorage.getItem(`${role}_mobile`) || localStorage.getItem("creator_mobile") || "";
+      const response = await fetch("/api/creator/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          ...formData,
+          mobile,
+          role,
+        }),
+      });
 
-    setTimeout(() => {
-      setLocation(role === "creator" ? "/creator/pending-approval" : "/agent/pending-approval");
-    }, 1500);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || "Unable to submit registration");
+      }
+
+      if (role === "creator") {
+        localStorage.setItem("creator_registered", "true");
+        localStorage.setItem("creator_approval_status", "pending");
+      } else {
+        localStorage.setItem("agent_registered", "true");
+        localStorage.setItem("agent_approval_status", "pending");
+      }
+
+      toast({
+        title: "Registration Submitted",
+        description: "Your profile is under review. You'll be notified once approved.",
+      });
+
+      setTimeout(() => {
+        setLocation(role === "creator" ? "/creator/pending-approval" : "/agent/pending-approval");
+      }, 800);
+    } catch (error: any) {
+      toast({
+        title: "Registration Failed",
+        description: error.message || "Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const progressPercentage = (step / 4) * 100;
