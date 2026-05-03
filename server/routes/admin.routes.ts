@@ -8,23 +8,26 @@
  *   DELETE /api/admin/gifts/:id
  *   GET    /api/bonus/calculate
  *
- * NOTE: the admin gift CRUD routes don't currently require an admin role.
- * The original monolith had this same gap; preserving behavior so this
- * refactor stays mechanical. Tightening that with `requirePermission(
- * PERMISSIONS.GIFT_CONFIG_WRITE)` is a follow-up.
+ * Auth model (post-audit fix): every `/admin/*` route requires
+ * authenticateToken AND `requireRole('admin', 'super_user')`. The bonus
+ * calculator stays public (it's a stateless utility for the recharge UI).
  */
 
 import { Router, type Request, type Response } from "express";
 import { storage } from "../storage";
 import { insertGiftConfigSchema } from "@shared/schema";
 import { calculateBonus, DEFAULT_BONUS_TIERS } from "@foodiefinds/shared";
+import { authenticateToken, requireRole } from "../auth";
 
 export function buildAdminRouter(): Router {
     const router = Router();
 
+    // Apply auth + admin-role check to every /admin/* route below.
+    const adminOnly = [authenticateToken, requireRole("admin", "super_user")];
+
     // ---- /admin/gifts CRUD ----
 
-    router.get("/admin/gifts", async (_req: Request, res: Response) => {
+    router.get("/admin/gifts", ...adminOnly, async (_req: Request, res: Response) => {
         try {
             const gifts = await storage.getAllGifts();
             res.json(gifts);
@@ -33,7 +36,7 @@ export function buildAdminRouter(): Router {
         }
     });
 
-    router.post("/admin/gifts", async (req: Request, res: Response) => {
+    router.post("/admin/gifts", ...adminOnly, async (req: Request, res: Response) => {
         try {
             const validatedData = insertGiftConfigSchema.parse(req.body);
             const gift = await storage.createGift(validatedData);
@@ -43,7 +46,7 @@ export function buildAdminRouter(): Router {
         }
     });
 
-    router.patch("/admin/gifts/:id", async (req: Request, res: Response) => {
+    router.patch("/admin/gifts/:id", ...adminOnly, async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             const gift = await storage.updateGift(id, req.body);
@@ -53,7 +56,7 @@ export function buildAdminRouter(): Router {
         }
     });
 
-    router.delete("/admin/gifts/:id", async (req: Request, res: Response) => {
+    router.delete("/admin/gifts/:id", ...adminOnly, async (req: Request, res: Response) => {
         try {
             const { id } = req.params;
             await storage.deleteGift(id);

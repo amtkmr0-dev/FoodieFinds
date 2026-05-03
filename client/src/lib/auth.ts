@@ -33,12 +33,24 @@ export function getAccessToken(): string | null {
 }
 
 /**
+ * Notify the app that auth state changed (login/logout) so React-only
+ * providers like `WalletProvider` can re-read the user from storage and
+ * re-render. SSR/Node-safe via the `typeof window` guard.
+ */
+function notifyAuthChange(): void {
+    if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth-changed'));
+    }
+}
+
+/**
  * Set access token
  */
 export function setAccessToken(token: string): void {
     accessToken = token;
     // Manus §4.1: WebSocket auth uses the same JWT.
     realtime.setToken(token);
+    notifyAuthChange();
 }
 
 /**
@@ -47,6 +59,7 @@ export function setAccessToken(token: string): void {
 export function clearAccessToken(): void {
     accessToken = null;
     realtime.setToken(null);
+    notifyAuthChange();
 }
 
 /**
