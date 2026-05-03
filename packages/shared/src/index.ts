@@ -4,7 +4,19 @@
  */
 
 // Export utilities
-export { cn, formatCurrency, formatTimeDuration, truncateText, generateId, debounce, isMobileDevice, getQueryParam, setQueryParam } from './utils'
+export {
+    cn,
+    formatCurrency,
+    parseCurrency,
+    formatTimeDuration,
+    truncateText,
+    generateId,
+    debounce,
+    isMobileDevice,
+    getQueryParam,
+    setQueryParam,
+    formatPhoneNumber,
+} from './utils'
 
 // Export constants
 export * from './constants'
