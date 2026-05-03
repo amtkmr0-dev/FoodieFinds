@@ -1,0 +1,66 @@
+# =============================================================================
+# Render Blueprint for FoodieFinds
+# =============================================================================
+# One-click deploy:
+#
+#   1. https://dashboard.render.com/blueprints
+#   2. "New Blueprint Instance" -> connect this repo, branch `main`
+#   3. Render reads this file and provisions:
+#        - foodiefinds-server  (web service, free plan, single instance)
+#        - foodiefinds-db      (Postgres free plan, 90-day expiry)
+#   4. The first deploy auto-runs migrations + seed via the Dockerfile CMD.
+#
+# Once deployed, the public URL prints in the Render dashboard. JWT_SECRET
+# is auto-generated and injected; you don't need to set anything by hand.
+#
+# Costs nothing while you're testing. The free Postgres expires after 90
+# days; bump to a paid plan via dashboard before then if you need to keep it.
+# =============================================================================
+
+services:
+    - type: web
+      name: foodiefinds-server
+      runtime: docker
+      plan: free
+      region: oregon
+      branch: main
+      autoDeploy: true
+      dockerfilePath: ./Dockerfile
+
+      # Probe / serves both the React app and the API on the same port,
+      # so this also confirms the SPA loads.
+      healthCheckPath: /api/gifts
+
+      envVars:
+          # Single-process WebSocket gateway needs sticky sessions if scaled
+          # to >1 instance. We pin to a single instance for now.
+          - key: NODE_ENV
+            value: production
+          - key: PORT
+            value: 5000
+          - key: LOG_LEVEL
+            value: info
+
+          # Generated once and persisted across deploys by Render.
+          - key: JWT_SECRET
+            generateValue: true
+
+          # Postgres connection string injected from the database below.
+          - key: DATABASE_URL
+            fromDatabase:
+                name: foodiefinds-db
+                property: connectionString
+
+          # CORS allow-list. After first deploy, set this to the actual
+          # service URL Render assigned (something like
+          # `https://foodiefinds-server.onrender.com`). Stays open until then.
+          - key: ALLOWED_ORIGINS
+            sync: false
+
+databases:
+    - name: foodiefinds-db
+      databaseName: foodiefinds
+      user: foodiefinds
+      plan: free
+      region: oregon
+      postgresMajorVersion: "16"
