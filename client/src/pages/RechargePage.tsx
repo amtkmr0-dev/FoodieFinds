@@ -14,6 +14,7 @@ import { PaymentErrorDialog, PaymentErrorType } from "@/components/PaymentErrorD
 import { PaymentReceipt, PaymentReceiptData } from "@/components/PaymentReceipt";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { QUICK_RECHARGE_AMOUNTS } from "@/lib/config";
+import { usePaymentPolling } from "@/hooks/usePaymentPolling";
 
 // Payment request deduplication - track active payment requests
 const activePaymentRequests = new Map<string, boolean>();
@@ -51,9 +52,10 @@ export default function RechargePage() {
   const [errorType, setErrorType] = useState<PaymentErrorType>("generic");
   const [showReceipt, setShowReceipt] = useState(false);
   const [receiptData, setReceiptData] = useState<PaymentReceiptData | null>(null);
-  const [isPolling, setIsPolling] = useState(false);
-  const [pollingTransactionId, setPollingTransactionId] = useState<string | null>(null);
-  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  // Manus §2.1: real server polling instead of the previous stub that
+  // returned success after 5 ticks regardless of actual status.
+  const paymentPolling = usePaymentPolling({ intervalMs: 3000, timeoutMs: 5 * 60 * 1000 });
+  const isPolling = paymentPolling.isPolling;
   const requestIdRef = useRef<string | null>(null);
 
   // BUG-023 FIX: Retry state
@@ -143,54 +145,50 @@ export default function RechargePage() {
 
       // Handle different payment statuses
       if (result.status === 'pending') {
-        // Payment is pending - implement polling mechanism
-        const transactionId = result.transaction?.transactionId || `TXN${Date.now()}`;
-        setPollingTransactionId(transactionId);
-        setIsPolling(true);
-
+        const transactionId = result.transaction?.transactionId || result.transactionId;
+        if (!transactionId) {
+          throw new Error('Server returned pending status without a transactionId');
+        }
         toast({
           title: "Payment Processing",
           description: "Your payment is being processed. Please wait...",
         });
 
-        // Start polling for payment status
-        startPolling(transactionId, selectedAmount, selectedMethod);
-        return;
+        const final = await paymentPolling.start(transactionId);
+
+        if (final.status === 'success') {
+          finalizeSuccessfulPayment({
+            transactionId: final.transactionId,
+            amount: selectedAmount,
+            total: final.totalAmount ?? selectedAmount,
+            bonus: final.bonus,
+            method: selectedMethod,
+          });
+          return;
+        }
+        if (final.status === 'timeout') {
+          toast({
+            title: "Payment Timeout",
+            description: "Your payment is taking longer than expected. Check your transaction history.",
+            variant: "destructive",
+          });
+          return;
+        }
+        throw new Error(final.error || `Payment ${final.status}`);
       }
 
       if (!result.success) {
         throw new Error(result.error || 'Payment failed');
       }
 
-      // BUG-001 FIX: Mark first recharge as completed ONLY after payment is confirmed successful
-      localStorage.setItem("firstRechargeCompleted", "true");
-
-      // BUG-037 FIX: Add fee calculation to total
+      // Synchronous success: server already confirmed.
       const fee = result.fee || 0;
-      const receipt: PaymentReceiptData = {
-        transactionId: result.transaction?.transactionId || `TXN${Date.now()}`,
+      finalizeSuccessfulPayment({
+        transactionId: result.transaction?.transactionId,
         amount: selectedAmount,
-        total: result.totalAmount || selectedAmount + fee,
+        total: result.totalAmount ?? selectedAmount + fee,
         bonus: result.bonus,
-        paymentMethod: paymentMethods.find(m => m.id === selectedMethod)?.name || "Unknown",
-        date: new Date().toLocaleString("en-IN", {
-          dateStyle: "medium",
-          timeStyle: "short",
-        }),
-        status: "success",
-      };
-
-      setReceiptData(receipt);
-      setShowReceipt(true);
-
-      // Show success message with bonus information
-      const message = result.bonus && result.bonus > 0
-        ? `${formatCurrency(selectedAmount)} + ${formatCurrency(result.bonus)} bonus has been added to your wallet.`
-        : `${formatCurrency(selectedAmount)} has been added to your wallet.`;
-
-      toast({
-        title: "Payment Successful!",
-        description: message,
+        method: selectedMethod,
       });
     } catch (error: any) {
       // Determine error type based on error message
@@ -220,93 +218,44 @@ export default function RechargePage() {
     }
   };
 
-  // BUG-002 FIX: Implement polling mechanism for pending payments
-  const startPolling = (transactionId: string, amount: number, method: string) => {
-    let pollCount = 0;
-    const maxPolls = 30; // Poll for up to 5 minutes (30 * 10 seconds)
+  /**
+   * Build the receipt + show success toast once the SERVER has confirmed
+   * the payment. Manus §2.1: never derive success client-side.
+   */
+  const finalizeSuccessfulPayment = (args: {
+    transactionId?: string;
+    amount: number;
+    total: number;
+    bonus?: number;
+    method: string;
+  }) => {
+    const receipt: PaymentReceiptData = {
+      transactionId: args.transactionId ?? `TXN${Date.now()}`,
+      amount: args.amount,
+      total: args.total,
+      bonus: args.bonus,
+      paymentMethod: paymentMethods.find(m => m.id === args.method)?.name || "Unknown",
+      date: new Date().toLocaleString("en-IN", {
+        dateStyle: "medium",
+        timeStyle: "short",
+      }),
+      status: "success",
+    };
 
-    pollingIntervalRef.current = setInterval(async () => {
-      pollCount++;
+    setReceiptData(receipt);
+    setShowReceipt(true);
 
-      try {
-        // In a real app, you would call an API to check payment status
-        // For now, we'll simulate the polling with a timeout
-        if (pollCount >= 5) {
-          // Simulate payment completion after 5 polls (50 seconds)
-          clearInterval(pollingIntervalRef.current!);
-          pollingIntervalRef.current = null;
-          setIsPolling(false);
+    const message = args.bonus && args.bonus > 0
+      ? `${formatCurrency(args.amount)} + ${formatCurrency(args.bonus)} bonus has been added to your wallet.`
+      : `${formatCurrency(args.amount)} has been added to your wallet.`;
 
-          // BUG-001 FIX: Mark first recharge as completed ONLY after payment is confirmed successful
-          localStorage.setItem("firstRechargeCompleted", "true");
+    toast({ title: "Payment Successful!", description: message });
 
-          // Generate receipt data
-          const receipt: PaymentReceiptData = {
-            transactionId,
-            amount,
-            total: amount,
-            bonus: 0,
-            paymentMethod: paymentMethods.find(m => m.id === method)?.name || "Unknown",
-            date: new Date().toLocaleString("en-IN", {
-              dateStyle: "medium",
-              timeStyle: "short",
-            }),
-            status: "success",
-          };
-
-          setReceiptData(receipt);
-          setShowReceipt(true);
-
-          toast({
-            title: "Payment Successful!",
-            description: `${formatCurrency(amount)} has been added to your wallet.`,
-          });
-
-          // Clear the active request
-          if (requestIdRef.current) {
-            activePaymentRequests.delete(requestIdRef.current);
-            requestIdRef.current = null;
-          }
-        }
-      } catch (error) {
-        console.error("Polling error:", error);
-      }
-
-      // Stop polling after max attempts
-      if (pollCount >= maxPolls) {
-        clearInterval(pollingIntervalRef.current!);
-        pollingIntervalRef.current = null;
-        setIsPolling(false);
-
-        toast({
-          title: "Payment Timeout",
-          description: "Your payment is taking longer than expected. Please check your transaction history.",
-          variant: "destructive",
-        });
-
-        // Clear the active request
-        if (requestIdRef.current) {
-          activePaymentRequests.delete(requestIdRef.current);
-          requestIdRef.current = null;
-        }
-      }
-    }, 10000); // Poll every 10 seconds
-  };
-
-  // Cleanup polling on unmount
-  const cleanupPolling = useCallback(() => {
-    if (pollingIntervalRef.current) {
-      clearInterval(pollingIntervalRef.current);
-      pollingIntervalRef.current = null;
+    if (requestIdRef.current) {
+      activePaymentRequests.delete(requestIdRef.current);
+      requestIdRef.current = null;
     }
-    setIsPolling(false);
-    setPollingTransactionId(null);
-  }, []);
-
-  // Cleanup on unmount
-  useState(() => {
-    return () => cleanupPolling();
-  });
+  };
 
   // BUG-023 FIX: Enhanced retry handler with retry count tracking
   const handleRetryPayment = () => {
