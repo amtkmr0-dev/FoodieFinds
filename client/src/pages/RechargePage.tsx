@@ -15,6 +15,7 @@ import { PaymentReceipt, PaymentReceiptData } from "@/components/PaymentReceipt"
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { QUICK_RECHARGE_AMOUNTS } from "@/lib/config";
 import { usePaymentPolling } from "@/hooks/usePaymentPolling";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 // Payment request deduplication - track active payment requests
 const activePaymentRequests = new Map<string, boolean>();
@@ -40,7 +41,10 @@ const calculateRetryDelay = (attempt: number, config: RetryConfig): number => {
   return Math.min(delay, config.maxDelay);
 };
 
-export default function RechargePage() {
+// Inner component holds all the existing hooks. The default export below
+// wraps it with `useRequireAuth` so unauthenticated visitors redirect to
+// /signup BEFORE any hooks here mount and fire 401-bound API calls.
+function RechargePageContent() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const { balance, recharge } = useWallet();
@@ -461,4 +465,10 @@ Status: ${receiptData.status}
       </Dialog>
     </div>
   );
+}
+
+export default function RechargePage() {
+  const user = useRequireAuth();
+  if (!user) return null;
+  return <RechargePageContent />;
 }
