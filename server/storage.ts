@@ -10,11 +10,18 @@ import {
 } from "@foodiefinds/shared";
 import { randomUUID } from "crypto";
 
-// modify the interface with any CRUD methods
-// you might need
+// =============================================================================
+// IStorage interface and supporting types.
+//
+// Manus §1.1: this file used to be MemStorage-only. The interface is now
+// implemented by both `MemStorage` (below, the default for tests / no DB) and
+// `DrizzleStorage` (server/storage-drizzle.ts, production-grade Postgres).
+// The `storage` singleton at the bottom picks one based on `DATABASE_URL`.
+// =============================================================================
 
-// Extended types for transaction storage
-interface StoredTransaction {
+// Extended type for transaction storage. Mirrors the unified `transactions`
+// table added to shared/schema.ts in this PR.
+export interface StoredTransaction {
   id: string;
   userId: string;
   type: 'recharge' | 'call' | 'gift' | 'refund';
@@ -30,7 +37,7 @@ interface StoredTransaction {
   updatedAt: Date;
 }
 
-interface WalletOperation {
+export interface WalletOperation {
   userId: string;
   operation: 'credit' | 'debit';
   amount: number;
@@ -39,7 +46,7 @@ interface WalletOperation {
   metadata?: Record<string, any>;
 }
 
-interface WalletOperationResult {
+export interface WalletOperationResult {
   success: boolean;
   wallet: UserWallet;
   transaction?: StoredTransaction;
@@ -508,4 +515,31 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// =============================================================================
+// Storage factory (Manus §1.1)
+//
+// Picks `DrizzleStorage` (Postgres) when `DATABASE_URL` is set, falls back
+// to `MemStorage` otherwise. The Drizzle backend is loaded lazily so the
+// `@neondatabase/serverless` import doesn't run when not needed (e.g.
+// during unit tests).
+// =============================================================================
+
+import { isDatabaseConfigured } from "./db";
+
+function buildStorage(): IStorage {
+    if (isDatabaseConfigured()) {
+        // Lazy require so DrizzleStorage / @neondatabase/serverless is only
+        // loaded when actually using a real database.
+        // eslint-disable-next-line @typescript-eslint/no-var-requires
+        const { DrizzleStorage } = require("./storage-drizzle");
+        // eslint-disable-next-line no-console
+        console.log("storage: using DrizzleStorage (Postgres)");
+        return new DrizzleStorage();
+    }
+    // eslint-disable-next-line no-console
+    console.log("storage: using MemStorage (in-memory; DATABASE_URL not set)");
+    return new MemStorage();
+}
+
+export const storage: IStorage = buildStorage();
+
