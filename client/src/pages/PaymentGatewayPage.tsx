@@ -13,11 +13,12 @@ import { PaymentErrorDialog, PaymentErrorType } from "@/components/PaymentErrorD
 import { PaymentReceipt, PaymentReceiptData } from "@/components/PaymentReceipt";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { usePaymentPolling } from "@/hooks/usePaymentPolling";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
 // Payment request deduplication - track active payment requests
 const activePaymentRequests = new Map<string, boolean>();
 
-export default function PaymentGatewayPage() {
+function PaymentGatewayPageContent() {
   const [, setLocation] = useLocation();
   const { amount } = useParams<{ amount: string }>();
   const { toast } = useToast();
@@ -345,4 +346,10 @@ Status: ${receiptData.status}
       </Dialog>
     </div>
   );
+}
+
+export default function PaymentGatewayPage() {
+  const user = useRequireAuth();
+  if (!user) return null;
+  return <PaymentGatewayPageContent />;
 }

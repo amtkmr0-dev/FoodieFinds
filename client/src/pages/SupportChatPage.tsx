@@ -4,8 +4,9 @@ import { ThemeToggle } from "@/components/ThemeToggle";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { ChevronLeft } from "lucide-react";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 
-export default function SupportChatPage() {
+function SupportChatPageContent() {
   const [, setLocation] = useLocation();
   const [hasHadFirstRecharge, setHasHadFirstRecharge] = useState(false);
   
@@ -38,4 +39,10 @@ export default function SupportChatPage() {
       </div>
     </div>
   );
+}
+
+export default function SupportChatPage() {
+  const user = useRequireAuth();
+  if (!user) return null;
+  return <SupportChatPageContent />;
 }

@@ -10,9 +10,10 @@ import { ChevronLeft, Play, Phone, Video, AlertCircle } from "lucide-react";
 import { useLocation, useParams } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { useWallet } from "@/hooks/useWallet";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { creatorsData, type Creator } from "@/lib/creatorsData";
 
-export default function CreatorProfile() {
+function CreatorProfileContent() {
   const [, setLocation] = useLocation();
   const { id: creatorId } = useParams<{ id: string }>();
   const [creator, setCreator] = useState<Creator | null>(null);
@@ -372,4 +373,10 @@ export default function CreatorProfile() {
       )}
     </div>
   );
+}
+
+export default function CreatorProfile() {
+  const user = useRequireAuth();
+  if (!user) return null;
+  return <CreatorProfileContent />;
 }
