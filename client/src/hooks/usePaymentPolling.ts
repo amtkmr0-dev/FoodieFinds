@@ -38,13 +38,20 @@ export interface PaymentStatusResult {
 export interface UsePaymentPollingOptions {
     /** Total wait before giving up. Default: 5 minutes. */
     timeoutMs?: number;
-    /** HTTP fallback cadence used only when the WebSocket is unavailable.
-     *  Default: 30s. */
+    /** Cadence (ms) of the HTTP probe that runs as a safety net when the
+     *  WebSocket is unavailable. Default: 30s. The two existing call sites
+     *  pass `intervalMs`; that's kept as an alias so the configuration
+     *  isn't silently ignored (post-merge audit). */
     httpFallbackMs?: number;
+    intervalMs?: number;
 }
 
 export function usePaymentPolling(opts: UsePaymentPollingOptions = {}) {
-    const { timeoutMs = 5 * 60 * 1000, httpFallbackMs = 30_000 } = opts;
+    const {
+        timeoutMs = 5 * 60 * 1000,
+        // Honour either name; prefer `intervalMs` since it's what callers pass.
+        httpFallbackMs = opts.intervalMs ?? 30_000,
+    } = opts;
 
     const [isPolling, setIsPolling] = useState(false);
     const [transactionId, setTransactionId] = useState<string | null>(null);

@@ -30,16 +30,39 @@ export const mockPaymentProcessor = getMockPaymentProcessor({
         console.log('Payment webhook received:', payload);
 
         if (payload.eventType === 'payment.success') {
+            // Look up the transaction record so we know who owns it and
+            // whether we've already credited the wallet (idempotency).
+            //
+            // FIX (post-merge audit): the previous version of this handler
+            //   1. ONLY credited the bonus, never the principal. With
+            //      simulation defaulting to async-pending, the synchronous
+            //      success branch in wallet.routes.ts never fires, so the
+            //      principal was silently lost.
+            //   2. Derived the userId from `payload.data.userId`, which the
+            //      mock processor computed as `txnId.split('_')[0]` - but
+            //      generateTransactionId emits `TXN<...>` with no underscore,
+            //      so credits went to a phantom wallet keyed by the full
+            //      transaction id.
+            // Both bugs are fixed below by reading the user from the stored
+            // transaction record and crediting `transaction.amount` (which
+            // was already set to `principal + bonus` in wallet.routes.ts).
+            const transaction = await storage.getTransactionById(payload.transactionId);
+            if (!transaction) {
+                console.warn(`Webhook for unknown transaction: ${payload.transactionId}`);
+                return;
+            }
+
+            const wasAlreadySuccess = transaction.status === 'success';
             await storage.updateTransactionStatus(payload.transactionId, 'success');
 
-            // Add bonus if applicable
-            const transaction = await storage.getTransactionById(payload.transactionId);
-            if (transaction && transaction.type === 'recharge') {
-                const bonus = calculateBonus(transaction.amount, DEFAULT_BONUS_TIERS);
-                if (bonus > 0) {
-                    await storage.addToWallet(payload.data.userId, bonus);
-                    console.log(`Bonus of ₹${bonus} added to wallet for user ${payload.data.userId}`);
-                }
+            let wallet;
+            if (!wasAlreadySuccess && transaction.type === 'recharge') {
+                // transaction.amount = principal + bonus (set when the
+                // pending recharge transaction was created). Credit it once.
+                wallet = await storage.addToWallet(transaction.userId, transaction.amount);
+                console.log(`Recharge credited: user=${transaction.userId} amount=₹${transaction.amount} txn=${payload.transactionId}`);
+            } else {
+                wallet = await storage.getWallet(transaction.userId);
             }
 
             // Manus §4.1: push WS events instead of letting clients poll.
@@ -48,14 +71,11 @@ export const mockPaymentProcessor = getMockPaymentProcessor({
                 status: 'success',
                 transactionId: payload.transactionId,
             });
-            if (payload.data?.userId) {
-                const wallet = await storage.getWallet(payload.data.userId);
-                publishRealtime(`wallet:${payload.data.userId}`, {
-                    type: 'wallet:updated',
-                    reason: 'recharge',
-                    wallet,
-                });
-            }
+            publishRealtime(`wallet:${transaction.userId}`, {
+                type: 'wallet:updated',
+                reason: 'recharge',
+                wallet,
+            });
         } else if (payload.eventType === 'payment.failed') {
             await storage.updateTransactionStatus(payload.transactionId, 'failed');
             publishRealtime(`payment:${payload.transactionId}`, {
