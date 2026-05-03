@@ -3,6 +3,8 @@
  * Handles JWT token storage, session management, and authentication API calls
  */
 
+import { realtime } from './realtime';
+
 const API_BASE = import.meta.env.VITE_API_URL || '';
 
 export interface AuthUser {
@@ -35,6 +37,8 @@ export function getAccessToken(): string | null {
  */
 export function setAccessToken(token: string): void {
     accessToken = token;
+    // Manus §4.1: WebSocket auth uses the same JWT.
+    realtime.setToken(token);
 }
 
 /**
@@ -42,6 +46,7 @@ export function setAccessToken(token: string): void {
  */
 export function clearAccessToken(): void {
     accessToken = null;
+    realtime.setToken(null);
 }
 
 /**
