@@ -1,4 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
+import { getAccessToken } from "./auth";
 
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
@@ -7,14 +8,31 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+/**
+ * Build the request headers, attaching `Authorization: Bearer <token>`
+ * whenever an access token is in memory.
+ *
+ * Post-audit fix: every money-touching server route now requires
+ * authentication, so requests must carry the JWT issued by `verify-otp`.
+ * `setAccessToken` (in auth.ts) is the single source of truth - this
+ * helper just reads it.
+ */
+function authHeaders(extra?: Record<string, string>): Record<string, string> {
+  const headers: Record<string, string> = { ...(extra ?? {}) };
+  const token = getAccessToken();
+  if (token) headers["Authorization"] = `Bearer ${token}`;
+  return headers;
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  const headers = authHeaders(data ? { "Content-Type": "application/json" } : undefined);
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });
@@ -30,6 +48,7 @@ export const getQueryFn: <T>(options: {
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
     const res = await fetch(queryKey.join("/") as string, {
+      headers: authHeaders(),
       credentials: "include",
     });
 

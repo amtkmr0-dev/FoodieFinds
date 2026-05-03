@@ -7,10 +7,12 @@
 
 import { Router, type Request, type Response } from "express";
 import { storage } from "../storage";
+import { authenticateToken } from "../auth";
 
 export function buildGiftsRouter(): Router {
     const router = Router();
 
+    // Public: gift catalog is read-only public data.
     router.get("/", async (_req: Request, res: Response) => {
         try {
             const gifts = await storage.getActiveGifts();
@@ -20,10 +22,13 @@ export function buildGiftsRouter(): Router {
         }
     });
 
-    router.post("/send", async (req: Request, res: Response) => {
+    // Authenticated: senderId derives from JWT, body's senderId is ignored
+    // (post-merge audit fix - was a wallet-drain vector).
+    router.post("/send", authenticateToken, async (req: Request, res: Response) => {
         try {
-            const { senderId, recipientId, giftId, quantity, message } = req.body;
-            if (!senderId || !recipientId || !giftId || !quantity) {
+            const senderId = (req as any).user.userId as string;
+            const { recipientId, giftId, quantity, message } = req.body;
+            if (!recipientId || !giftId || !quantity) {
                 return res.status(400).json({ error: "Missing required fields" });
             }
 

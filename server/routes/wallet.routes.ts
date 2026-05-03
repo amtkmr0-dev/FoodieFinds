@@ -14,22 +14,45 @@
  * doesn't match `recharge` as a userId.
  */
 
-import { Router, type Request, type Response } from "express";
+import { Router, type Request, type Response, type NextFunction } from "express";
 import { storage } from "../storage";
 import { calculateBonus, DEFAULT_BONUS_TIERS } from "@foodiefinds/shared";
 import { publishRealtime } from "../realtime";
 import { mockPaymentProcessor, computeCallCost } from "./_shared";
+import { authenticateToken } from "../auth";
+
+/**
+ * Ensure the authenticated user owns the wallet identified in the URL path.
+ * Admin/super_user pass through. Returns 403 otherwise.
+ *
+ * Used on all `/:userId/*` routes so a logged-in user `alice` can't read or
+ * mutate `bob`'s wallet just by changing the URL.
+ */
+function requireOwnUserParam(req: Request, res: Response, next: NextFunction): void {
+    const user = (req as any).user as { userId: string; role: string } | undefined;
+    if (!user) { res.status(401).json({ error: "Authentication required" }); return; }
+    const pathUserId = req.params.userId;
+    if (pathUserId !== user.userId && user.role !== "admin" && user.role !== "super_user") {
+        res.status(403).json({ error: "Cannot access another user's wallet" });
+        return;
+    }
+    next();
+}
 
 export function buildWalletRouter(): Router {
     const router = Router();
 
     // ---- Recharge (literal prefix - must come before /:userId) ----
 
-    router.post("/recharge", async (req: Request, res: Response) => {
+    router.post("/recharge", authenticateToken, async (req: Request, res: Response) => {
         try {
-            const { userId, amount, paymentMethod } = req.body;
+            // userId is derived from the JWT (post-merge audit fix). The
+            // body's `userId` is ignored - a tampered client can no longer
+            // recharge someone else's wallet.
+            const userId = (req as any).user.userId as string;
+            const { amount, paymentMethod } = req.body;
 
-            if (!userId || !amount || !paymentMethod) {
+            if (!amount || !paymentMethod) {
                 return res.status(400).json({ error: "Missing required fields" });
             }
 
@@ -136,19 +159,20 @@ export function buildWalletRouter(): Router {
 
     // ---- End-of-call billing (literal prefix) ----
 
-    router.post("/deduct-call", async (req: Request, res: Response) => {
+    router.post("/deduct-call", authenticateToken, async (req: Request, res: Response) => {
         try {
+            const userId = (req as any).user.userId as string;
             const {
-                userId,
                 creatorId,
                 callType,
                 durationSeconds,
                 pricePerMinute,
                 giftCost,
                 // NOTE: `totalCost` may be present for back-compat but we IGNORE it (Manus §2.1).
+                // NOTE: `userId` from body is also ignored (post-merge audit) - we trust the JWT.
             } = req.body ?? {};
 
-            if (!userId || !creatorId) {
+            if (!creatorId) {
                 return res.status(400).json({ error: "Missing required fields" });
             }
             if (typeof durationSeconds !== "number" || durationSeconds < 0) {
@@ -223,7 +247,7 @@ export function buildWalletRouter(): Router {
 
     // ---- /:userId/* (specific paths first, bare /:userId last) ----
 
-    router.get("/:userId/transactions", async (req: Request, res: Response) => {
+    router.get("/:userId/transactions", authenticateToken, requireOwnUserParam, async (req: Request, res: Response) => {
         try {
             const { userId } = req.params;
             const { type, status, paymentMethod, limit, offset } = req.query;
@@ -242,7 +266,7 @@ export function buildWalletRouter(): Router {
         }
     });
 
-    router.get("/:userId/balance-status", async (req: Request, res: Response) => {
+    router.get("/:userId/balance-status", authenticateToken, requireOwnUserParam, async (req: Request, res: Response) => {
         try {
             const { userId } = req.params;
             const pricePerMinute = parseFloat((req.query.pricePerMinute as string) ?? "0");
@@ -283,7 +307,7 @@ export function buildWalletRouter(): Router {
         }
     });
 
-    router.get("/:userId/has-completed-recharge", async (req: Request, res: Response) => {
+    router.get("/:userId/has-completed-recharge", authenticateToken, requireOwnUserParam, async (req: Request, res: Response) => {
         try {
             const { userId } = req.params;
             const recharges = await storage.getTransactionHistory(userId, {
@@ -297,7 +321,7 @@ export function buildWalletRouter(): Router {
         }
     });
 
-    router.get("/:userId", async (req: Request, res: Response) => {
+    router.get("/:userId", authenticateToken, requireOwnUserParam, async (req: Request, res: Response) => {
         try {
             const { userId } = req.params;
             let wallet = await storage.getWallet(userId);

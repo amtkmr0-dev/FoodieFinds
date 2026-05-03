@@ -4,7 +4,7 @@ import { Card } from "@/components/ui/card";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
-import { useWallet, USER_ID } from "@/hooks/useWallet";
+import { useWallet, getCurrentUserId } from "@/hooks/useWallet";
 import type { GiftConfig } from "@shared/schema";
 import { Heart, Sparkles, Sun, Gem, Crown, Star, Rocket, Trophy } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -57,11 +57,12 @@ export function GiftSelectionModal({
   // Send gift mutation
   const sendGiftMutation = useMutation({
     mutationFn: async (gift: GiftConfig) => {
+      // senderId is derived server-side from the JWT (post-audit fix);
+      // sending it from the client would just be ignored.
       const res = await apiRequest("POST", "/api/gifts/send", {
-        senderId: USER_ID,
         recipientId: creatorId,
         giftId: gift.id,
-        quantity: 1, // Default to sending 1 gift
+        quantity: 1,
       });
       return await res.json();
     },
@@ -74,7 +75,8 @@ export function GiftSelectionModal({
       // BUG-008 FIX: Notify parent component about gift cost
       onGiftSent?.(giftCost);
       // Invalidate wallet query to fetch updated balance
-      queryClient.invalidateQueries({ queryKey: ["/api/wallet", USER_ID] });
+      const uid = getCurrentUserId();
+      if (uid) queryClient.invalidateQueries({ queryKey: ["/api/wallet", uid] });
       refreshBalance();
       onClose();
     },

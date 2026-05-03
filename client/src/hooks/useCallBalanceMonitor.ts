@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useWallet, USER_ID } from "./useWallet";
+import { useWallet, getCurrentUserId } from "./useWallet";
 import { useToast } from "@/hooks/use-toast";
 import { realtime } from "@/lib/realtime";
 
@@ -106,7 +106,7 @@ export function useCallBalanceMonitor(
                 giftCost: String(currentGiftCost),
             });
             const res = await fetch(
-                `${API_BASE}/api/wallet/${USER_ID}/balance-status?${params.toString()}`,
+                `${API_BASE}/api/wallet/${getCurrentUserId() ?? ''}/balance-status?${params.toString()}`,
                 { credentials: 'include' },
             );
             if (!res.ok) throw new Error(`balance-status failed: ${res.status}`);
@@ -218,7 +218,9 @@ export function useCallBalanceMonitor(
     useEffect(() => {
         if (!isCallActive) return;
 
-        const unsub = realtime.subscribe(`wallet:${USER_ID}`, (event: any) => {
+        const userId = getCurrentUserId();
+        if (!userId) return;
+        const unsub = realtime.subscribe(`wallet:${userId}`, (event: any) => {
             if (event?.type !== 'wallet:updated') return;
             // useWallet handles updating its own state; we just use the
             // moment as a hint to refresh derived values for this view.
