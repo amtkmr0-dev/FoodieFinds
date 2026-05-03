@@ -16,7 +16,11 @@
     "format": "prettier --write \"**/*.{ts,tsx,md,json}\"",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "turbo run build --filter=foodiefinds-* && changeset publish"
+    "release": "turbo run build --filter=foodiefinds-* && changeset publish",
+    "db:generate": "drizzle-kit generate --config drizzle.config.ts",
+    "db:migrate": "tsx scripts/migrate.ts",
+    "db:seed": "tsx scripts/seed.ts",
+    "db:setup": "npm run db:migrate && npm run db:seed"
   },
   "dependencies": {
     "jsonwebtoken": "^9.0.2",
@@ -24,12 +28,17 @@
     "helmet": "^7.1.0",
     "express-rate-limit": "^7.1.5",
     "cookie-parser": "^1.4.6",
-    "ws": "^8.18.0"
+    "ws": "^8.18.0",
+    "@neondatabase/serverless": "^0.10.4",
+    "drizzle-orm": "^0.36.0",
+    "drizzle-zod": "^0.5.1"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.1",
     "@types/ws": "^8.5.13",
+    "drizzle-kit": "^0.28.0",
     "prettier": "^3.2.5",
+    "tsx": "^4.19.2",
     "turbo": "^1.12.4",
     "typescript": "^5.3.3",
     "vitest": "^2.1.4"
