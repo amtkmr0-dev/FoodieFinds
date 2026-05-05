@@ -8,16 +8,20 @@ import {
   type InsertCallTransaction,
   type RechargeTransaction,
 } from "@foodiefinds/shared";
+// CreatorProfile is new in this PR; import directly from @shared/schema
+// (mirroring the pattern storage-drizzle.ts uses for `transactions`/`Transaction`)
+// since the @foodiefinds/shared workspace re-exports may not pick it up yet.
+import { type CreatorProfile } from "@shared/schema";
 import { randomUUID } from "crypto";
 
-// =============================================================================
+// =====================================================================
 // IStorage interface and supporting types.
 //
 // Manus §1.1: this file used to be MemStorage-only. The interface is now
 // implemented by both `MemStorage` (below, the default for tests / no DB) and
 // `DrizzleStorage` (server/storage-drizzle.ts, production-grade Postgres).
 // The `storage` singleton at the bottom picks one based on `DATABASE_URL`.
-// =============================================================================
+// =====================================================================
 
 // Extended type for transaction storage. Mirrors the unified `transactions`
 // table added to shared/schema.ts in this PR.
@@ -54,6 +58,23 @@ export interface WalletOperationResult {
     code: string;
     message: string;
   };
+}
+
+// PR #7: creator-side aggregates for the dashboard endpoint.
+export interface CreatorEarningsSummary {
+  todayCalls: number;
+  todayEarnings: number;
+  totalCalls: number;
+  totalEarnings: number;
+  recentCalls: Array<{
+    id: string;
+    userId: string;
+    callType: string;
+    durationSeconds: number;
+    pricePerMinute: number;
+    totalCost: number;
+    createdAt: Date;
+  }>;
 }
 
 export interface IStorage {
@@ -99,8 +120,14 @@ export interface IStorage {
     limit?: number;
     offset?: number;
   }): Promise<StoredTransaction[]>;
-  getTransactionById(transactionId: string): Promise<StoredTransaction | undefined>;
+  getTransactionByID(transactionId: string): Promise<StoredTransaction | undefined>;
   updateTransactionStatus(transactionId: string, status: string): Promise<StoredTransaction>;
+
+  // PR #7: Creator-public-profile operations
+  getCreators(): Promise<CreatorProfile[]>;
+  getCreatorById(id: string): Promise<CreatorProfile | undefined>;
+  getCreatorByMobile(mobileNumber: string): Promise<CreatorProfile | undefined>;
+  getCreatorEarningsSummary(creatorId: string): Promise<CreatorEarningsSummary>;
 }
 
 export class MemStorage implements IStorage {
@@ -108,6 +135,8 @@ export class MemStorage implements IStorage {
   private wallets: Map<string, UserWallet>;
   private gifts: Map<string, GiftConfig>;
   private transactions: Map<string, StoredTransaction>;
+  private creators: Map<string, CreatorProfile>;
+  private creatorsByMobile: Map<string, string>; // mobile -> creatorId index
   private walletLocks: Map<string, Promise<void>>; // For atomic operations
 
   constructor() {
@@ -115,10 +144,13 @@ export class MemStorage implements IStorage {
     this.wallets = new Map();
     this.gifts = new Map();
     this.transactions = new Map();
+    this.creators = new Map();
+    this.creatorsByMobile = new Map();
     this.walletLocks = new Map();
 
-    // Initialize with default gifts
+    // Initialize with default gifts and creators.
     this.initializeDefaultGifts();
+    this.initializeDefaultCreators();
   }
 
   private async initializeDefaultGifts() {
@@ -136,6 +168,198 @@ export class MemStorage implements IStorage {
 
     for (const gift of defaultGifts) {
       await this.createGift(gift as InsertGiftConfig);
+    }
+  }
+
+  // PR #7: seed the same 9 demo creators that the static client/src/lib/creatorsData.ts has.
+  // Mobile numbers follow the pattern 9000000001..9000000009 so OTP login is predictable.
+  private initializeDefaultCreators() {
+    const defaults: CreatorProfile[] = [
+      {
+        id: "1",
+        mobileNumber: "9000000001",
+        name: "Sarah Johnson",
+        country: "India",
+        followers: 1250,
+        pricePerMinute: 45,
+        isOnline: "true",
+        randomMatchEnabled: "true",
+        allowedCallTypes: "both",
+        languages: ["English", "Hindi", "Tamil"],
+        aboutMe: "Friendly conversationalist who loves discussing life experiences and offering advice on personal growth.",
+        talksAbout: ["Life coaching", "Relationships", "Career guidance", "Mental wellness"],
+        hobbies: ["Reading", "Yoga", "Traveling", "Cooking"],
+        foodPreferences: ["Vegetarian", "Italian cuisine", "Indian sweets"],
+        sportsInterests: ["Cricket", "Badminton", "Running"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "2",
+        mobileNumber: "9000000002",
+        name: "Rahul Verma",
+        country: "India",
+        followers: 890,
+        pricePerMinute: 38,
+        isOnline: "false",
+        randomMatchEnabled: "false",
+        allowedCallTypes: "video",
+        languages: ["Hindi", "English"],
+        aboutMe: "Tech enthusiast and startup mentor with 10 years of experience in software development.",
+        talksAbout: ["Technology", "Startups", "Programming", "Career advice"],
+        hobbies: ["Gaming", "Photography", "Blogging"],
+        foodPreferences: ["Non-vegetarian", "North Indian", "Chinese"],
+        sportsInterests: ["Football", "Chess", "Table tennis"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "3",
+        mobileNumber: "9000000003",
+        name: "Priya Sharma",
+        country: "India",
+        followers: 2100,
+        pricePerMinute: 52,
+        isOnline: "true",
+        randomMatchEnabled: "true",
+        allowedCallTypes: "both",
+        languages: ["English", "Hindi", "Marathi"],
+        aboutMe: "Business consultant and motivational speaker passionate about empowering entrepreneurs.",
+        talksAbout: ["Business strategy", "Entrepreneurship", "Marketing", "Leadership"],
+        hobbies: ["Public speaking", "Writing", "Gardening"],
+        foodPreferences: ["Vegetarian", "South Indian", "Continental"],
+        sportsInterests: ["Tennis", "Swimming", "Cycling"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "4",
+        mobileNumber: "9000000004",
+        name: "Amit Patel",
+        country: "India",
+        followers: 1500,
+        pricePerMinute: 40,
+        isOnline: "true",
+        randomMatchEnabled: "false",
+        allowedCallTypes: "audio",
+        languages: ["Gujarati", "Hindi", "English"],
+        aboutMe: "Finance expert helping people make smart investment decisions and achieve financial freedom.",
+        talksAbout: ["Investment", "Stock market", "Personal finance", "Real estate"],
+        hobbies: ["Reading", "Playing guitar", "Hiking"],
+        foodPreferences: ["Vegetarian", "Gujarati cuisine", "Street food"],
+        sportsInterests: ["Cricket", "Volleyball", "Jogging"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "5",
+        mobileNumber: "9000000005",
+        name: "Neha Kapoor",
+        country: "India",
+        followers: 1780,
+        pricePerMinute: 48,
+        isOnline: "true",
+        randomMatchEnabled: "true",
+        allowedCallTypes: "both",
+        languages: ["English", "Hindi", "Punjabi"],
+        aboutMe: "Fashion designer and lifestyle blogger who loves sharing creative ideas and style tips.",
+        talksAbout: ["Fashion", "Lifestyle", "Beauty", "Social media"],
+        hobbies: ["Sketching", "Shopping", "Dancing", "Photography"],
+        foodPreferences: ["Vegetarian", "Punjabi cuisine", "Fusion food"],
+        sportsInterests: ["Zumba", "Yoga", "Badminton"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "6",
+        mobileNumber: "9000000006",
+        name: "Vikram Singh",
+        country: "India",
+        followers: 750,
+        pricePerMinute: 35,
+        isOnline: "false",
+        randomMatchEnabled: "false",
+        allowedCallTypes: "video",
+        languages: ["Hindi", "English"],
+        aboutMe: "Fitness trainer and nutrition coach dedicated to helping people achieve their health goals.",
+        talksAbout: ["Fitness", "Nutrition", "Weight loss", "Muscle building"],
+        hobbies: ["Gym training", "Sports", "Cooking healthy meals"],
+        foodPreferences: ["High protein", "Salads", "Smoothies"],
+        sportsInterests: ["Bodybuilding", "Boxing", "Running", "Basketball"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "7",
+        mobileNumber: "9000000007",
+        name: "Anjali Mehta",
+        country: "India",
+        followers: 1320,
+        pricePerMinute: 42,
+        isOnline: "true",
+        randomMatchEnabled: "true",
+        allowedCallTypes: "audio",
+        languages: ["English", "Hindi", "Bengali"],
+        aboutMe: "Psychologist and counselor specializing in stress management and emotional well-being.",
+        talksAbout: ["Mental health", "Stress management", "Relationships", "Self-care"],
+        hobbies: ["Meditation", "Reading", "Painting", "Listening to music"],
+        foodPreferences: ["Vegetarian", "Bengali cuisine", "Organic food"],
+        sportsInterests: ["Walking", "Swimming", "Yoga"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "8",
+        mobileNumber: "9000000008",
+        name: "Karan Malhotra",
+        country: "India",
+        followers: 1950,
+        pricePerMinute: 50,
+        isOnline: "true",
+        randomMatchEnabled: "false",
+        allowedCallTypes: "both",
+        languages: ["Hindi", "English", "Urdu"],
+        aboutMe: "Digital marketing expert helping brands grow their online presence and reach their audience.",
+        talksAbout: ["Digital marketing", "SEO", "Content creation", "Brand building"],
+        hobbies: ["Traveling", "Photography", "Blogging", "Music"],
+        foodPreferences: ["Non-vegetarian", "Mughlai", "Italian"],
+        sportsInterests: ["Cricket", "Football", "Snooker"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+      {
+        id: "9",
+        mobileNumber: "9000000009",
+        name: "Kavya Iyer",
+        country: "India",
+        followers: 1650,
+        pricePerMinute: 46,
+        isOnline: "false",
+        randomMatchEnabled: "false",
+        allowedCallTypes: "video",
+        languages: ["English", "Tamil", "Hindi"],
+        aboutMe: "Classical dancer and arts enthusiast sharing insights on Indian culture and performing arts.",
+        talksAbout: ["Dance", "Indian culture", "Arts", "Music", "Traditions"],
+        hobbies: ["Dancing", "Teaching", "Traveling", "Cooking"],
+        foodPreferences: ["Vegetarian", "South Indian", "Traditional sweets"],
+        sportsInterests: ["Badminton", "Swimming", "Yoga"],
+        photoUrl: null,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      },
+    ];
+
+    for (const c of defaults) {
+      this.creators.set(c.id, c);
+      this.creatorsByMobile.set(c.mobileNumber, c.id);
     }
   }
 
@@ -495,14 +719,14 @@ export class MemStorage implements IStorage {
     return transactions.slice(offset, offset + limit);
   }
 
-  async getTransactionById(transactionId: string): Promise<StoredTransaction | undefined> {
+  async getTransactionByID(transactionId: string): Promise<StoredTransaction | undefined> {
     return Array.from(this.transactions.values()).find(
       t => t.transactionId === transactionId || t.id === transactionId
     );
   }
 
   async updateTransactionStatus(transactionId: string, status: string): Promise<StoredTransaction> {
-    const transaction = await this.getTransactionById(transactionId);
+    const transaction = await this.getTransactionByID(transactionId);
     if (!transaction) {
       throw new Error('Transaction not found');
     }
@@ -513,16 +737,61 @@ export class MemStorage implements IStorage {
 
     return transaction;
   }
+
+  // PR #7: Creator-public-profile operations
+  async getCreators(): Promise<CreatorProfile[]> {
+    return Array.from(this.creators.values()).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+  }
+
+  async getCreatorById(id: string): Promise<CreatorProfile | undefined> {
+    return this.creators.get(id);
+  }
+
+  async getCreatorByMobile(mobileNumber: string): Promise<CreatorProfile | undefined> {
+    const id = this.creatorsByMobile.get(mobileNumber);
+    return id ? this.creators.get(id) : undefined;
+  }
+
+  async getCreatorEarningsSummary(creatorId: string): Promise<CreatorEarningsSummary> {
+    // Read from in-memory transactions where metadata.creatorId === creatorId.
+    const calls = Array.from(this.transactions.values()).filter(
+      t => t.type === 'call' && (t.metadata?.creatorId === creatorId)
+    );
+
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+
+    const todayCalls = calls.filter(c => c.createdAt >= todayStart);
+
+    return {
+      todayCalls: todayCalls.length,
+      todayEarnings: todayCalls.reduce((sum, c) => sum + c.amount, 0),
+      totalCalls: calls.length,
+      totalEarnings: calls.reduce((sum, c) => sum + c.amount, 0),
+      recentCalls: calls
+        .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
+        .slice(0, 10)
+        .map(c => ({
+          id: c.id,
+          userId: c.userId,
+          callType: (c.metadata?.callType as string) || 'audio',
+          durationSeconds: (c.metadata?.durationSeconds as number) || 0,
+          pricePerMinute: (c.metadata?.pricePerMinute as number) || 0,
+          totalCost: c.amount,
+          createdAt: c.createdAt,
+        })),
+    };
+  }
 }
 
-// =============================================================================
+// =====================================================================
 // Storage factory (Manus §1.1)
 //
 // Picks `DrizzleStorage` (Postgres) when `DATABASE_URL` is set, falls back
 // to `MemStorage` otherwise. The Drizzle backend is loaded lazily so the
 // `@neondatabase/serverless` import doesn't run when not needed (e.g.
 // during unit tests).
-// =============================================================================
+// =====================================================================
 
 import { isDatabaseConfigured } from "./db";
 
@@ -542,4 +811,3 @@ function buildStorage(): IStorage {
 }
 
 export const storage: IStorage = buildStorage();
-
