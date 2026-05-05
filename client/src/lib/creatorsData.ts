@@ -1,3 +1,26 @@
+/**
+ * Creator data: the static fallback array AND the API-backed hooks.
+ *
+ * Pre-PR #7 this file just exported the static array. PR #7 adds a real
+ * `/api/creators` backend (see server/routes/creators.routes.ts), so:
+ *
+ *   - `creatorsData` (export) - the static fallback. Still exported as-is
+ *     so any code that imports it directly keeps working.
+ *   - `useCreators()` (hook)  - fetches `/api/creators`. On 4xx/5xx OR while
+ *     the request is in flight, returns the static array so the UI never
+ *     looks empty.
+ *   - `useCreator(id)` (hook) - fetches `/api/creators/:id` with the same
+ *     fallback semantics.
+ *
+ * The fallback design is deliberate: the demo deploys to a free Render
+ * tier, where the first request after 15 min idle takes ~30s to wake the
+ * container. During that 30s the API returns a connection error - but the
+ * static array gives the home page something to render anyway, so the
+ * UX doesn't feel broken.
+ */
+
+import { useQuery } from "@tanstack/react-query";
+
 export interface Creator {
   id: string;
   name: string;
@@ -13,8 +36,11 @@ export interface Creator {
   hobbies?: string[];
   foodPreferences?: string[];
   sportsInterests?: string[];
+  photoUrl?: string;
 }
 
+// Static fallback. Mirrors the seeded creators in MemStorage and
+// scripts/seed.ts (creator IDs 1..9 with the same names, prices, etc).
 export const creatorsData: Creator[] = [
   {
     id: "1",
@@ -161,3 +187,56 @@ export const creatorsData: Creator[] = [
     sportsInterests: ["Badminton", "Swimming", "Yoga"],
   },
 ];
+
+/**
+ * Fetch the creator catalog from the API. Falls back to the static array
+ * on any failure - including the initial loading window before the first
+ * fetch resolves - so the UI never renders an empty/blank state.
+ */
+export function useCreators(): { data: Creator[]; isLoading: boolean; isError: boolean } {
+  const { data, isLoading, isError } = useQuery<Creator[]>({
+    queryKey: ["/api/creators"],
+    queryFn: async () => {
+      const res = await fetch("/api/creators");
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    // 5-min stale time - the catalog rarely changes during a session.
+    staleTime: 5 * 60 * 1000,
+    // Don't retry forever in the background; one retry is enough to
+    // shake out a transient cold-start blip on the free Render tier.
+    retry: 1,
+  });
+
+  return {
+    // If the request errored OR is still in flight with no cached data,
+    // fall through to the static array. Otherwise prefer the live data.
+    data: data && data.length > 0 ? data : creatorsData,
+    isLoading,
+    isError,
+  };
+}
+
+/**
+ * Fetch a single creator by id. Falls back to the static lookup on
+ * failure - same UX rationale as `useCreators`.
+ */
+export function useCreator(id: string | undefined): { data: Creator | undefined; isLoading: boolean; isError: boolean } {
+  const { data, isLoading, isError } = useQuery<Creator>({
+    queryKey: ["/api/creators", id],
+    queryFn: async () => {
+      const res = await fetch(`/api/creators/${id}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      return res.json();
+    },
+    enabled: !!id,
+    staleTime: 5 * 60 * 1000,
+    retry: 1,
+  });
+
+  return {
+    data: data ?? creatorsData.find((c) => c.id === id),
+    isLoading,
+    isError,
+  };
+}

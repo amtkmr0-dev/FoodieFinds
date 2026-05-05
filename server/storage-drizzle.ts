@@ -28,7 +28,9 @@ import {
     userWallets,
     giftsConfig,
     transactions,
+    creatorProfiles,
     type Transaction,
+    type CreatorProfile,
 } from "@shared/schema";
 import {
     type User,
@@ -45,6 +47,7 @@ import type {
     StoredTransaction,
     WalletOperation,
     WalletOperationResult,
+    CreatorEarningsSummary,
 } from "./storage";
 
 // ---- mappers: Drizzle row -> Zod-typed value used by IStorage --------------
@@ -89,6 +92,33 @@ function rowToTransaction(row: Transaction): StoredTransaction {
         createdAt: row.createdAt,
         updatedAt: row.updatedAt,
     };
+}
+
+// PR #7: map creator_profiles row to the public CreatorProfile shape.
+// JSONB array fields are returned as `unknown` by drizzle-orm; we coerce
+// to string[] (and tolerate null/undefined) to match the static
+// creatorsData.ts shape clients already consume.
+function rowToCreator(row: typeof creatorProfiles.$inferSelect): CreatorProfile {
+    return {
+        id: row.id,
+        mobileNumber: row.mobileNumber,
+        name: row.name,
+        country: row.country,
+        followers: row.followers,
+        pricePerMinute: row.pricePerMinute,
+        isOnline: row.isOnline,
+        randomMatchEnabled: row.randomMatchEnabled,
+        allowedCallTypes: row.allowedCallTypes,
+        languages: (row.languages as string[]) ?? [],
+        aboutMe: row.aboutMe,
+        talksAbout: (row.talksAbout as string[] | null) ?? null,
+        hobbies: (row.hobbies as string[] | null) ?? null,
+        foodPreferences: (row.foodPreferences as string[] | null) ?? null,
+        sportsInterests: (row.sportsInterests as string[] | null) ?? null,
+        photoUrl: row.photoUrl,
+        createdAt: row.createdAt,
+        updatedAt: row.updatedAt,
+    } as CreatorProfile;
 }
 
 // ---- DrizzleStorage --------------------------------------------------------
@@ -452,7 +482,7 @@ export class DrizzleStorage implements IStorage {
         return rows.map(rowToTransaction);
     }
 
-    async getTransactionById(transactionId: string): Promise<StoredTransaction | undefined> {
+    async getTransactionByID(transactionId: string): Promise<StoredTransaction | undefined> {
         // Match either the public transactionId (e.g. RECHARGE12345) or the
         // internal UUID, mirroring MemStorage's behavior.
         const [byTxnId] = await this.db
@@ -488,5 +518,69 @@ export class DrizzleStorage implements IStorage {
 
         if (!row) throw new Error("Transaction not found");
         return rowToTransaction(row);
+    }
+
+    // ---- PR #7: Creator-public-profile operations ----
+
+    async getCreators(): Promise<CreatorProfile[]> {
+        const rows = await this.db.select().from(creatorProfiles);
+        return rows.map(rowToCreator).sort((a, b) => parseInt(a.id) - parseInt(b.id));
+    }
+
+    async getCreatorById(id: string): Promise<CreatorProfile | undefined> {
+        const rows = await this.db
+            .select()
+            .from(creatorProfiles)
+            .where(eq(creatorProfiles.id, id))
+            .limit(1);
+        return rows[0] ? rowToCreator(rows[0]) : undefined;
+    }
+
+    async getCreatorByMobile(mobileNumber: string): Promise<CreatorProfile | undefined> {
+        const rows = await this.db
+            .select()
+            .from(creatorProfiles)
+            .where(eq(creatorProfiles.mobileNumber, mobileNumber))
+            .limit(1);
+        return rows[0] ? rowToCreator(rows[0]) : undefined;
+    }
+
+    async getCreatorEarningsSummary(creatorId: string): Promise<CreatorEarningsSummary> {
+        // We store creatorId inside the JSONB metadata of call-type transactions
+        // (set by both MemStorage and DrizzleStorage's createCallTransaction).
+        // Filter SQL-side via the @> jsonb-contains operator for efficiency.
+        const allCalls = await this.db
+            .select()
+            .from(transactions)
+            .where(
+                and(
+                    eq(transactions.type, "call"),
+                    sql`${transactions.metadata} @> ${JSON.stringify({ creatorId })}::jsonb`,
+                ),
+            )
+            .orderBy(desc(transactions.createdAt));
+
+        const calls = allCalls.map(rowToTransaction);
+
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        const todayCalls = calls.filter((c) => c.createdAt >= todayStart);
+
+        return {
+            todayCalls: todayCalls.length,
+            todayEarnings: todayCalls.reduce((sum, c) => sum + c.amount, 0),
+            totalCalls: calls.length,
+            totalEarnings: calls.reduce((sum, c) => sum + c.amount, 0),
+            recentCalls: calls.slice(0, 10).map((c) => ({
+                id: c.id,
+                userId: c.userId,
+                callType: (c.metadata?.callType as string) || "audio",
+                durationSeconds: (c.metadata?.durationSeconds as number) || 0,
+                pricePerMinute: (c.metadata?.pricePerMinute as number) || 0,
+                totalCost: c.amount,
+                createdAt: c.createdAt,
+            })),
+        };
     }
 }

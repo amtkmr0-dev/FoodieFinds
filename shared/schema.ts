@@ -266,7 +266,7 @@ export const insertCreatorRewardSchema = createInsertSchema(creatorRewards).omit
 export type InsertCreatorReward = z.infer<typeof insertCreatorRewardSchema>;
 export type CreatorReward = typeof creatorRewards.$inferSelect;
 
-// =============================================================================
+// =====================================================================
 // Unified transactions table (Manus §1.1 Drizzle migration)
 //
 // The IStorage interface in server/storage.ts uses a single `StoredTransaction`
@@ -274,7 +274,7 @@ export type CreatorReward = typeof creatorRewards.$inferSelect;
 // above (giftTransactions, rechargeTransactions, callTransactions, callLogs)
 // remain for analytics, but this table is the source of truth for the
 // generic transaction-history endpoint and the wallet rollback flow.
-// =============================================================================
+// =====================================================================
 export const transactions = pgTable("transactions", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   userId: text("user_id").notNull(),
@@ -299,3 +299,50 @@ export const insertTransactionSchema = createInsertSchema(transactions).omit({
 
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactions.$inferSelect;
+
+// =====================================================================
+// Creator profiles (PR #7: end-to-end demo wiring)
+//
+// This is the PUBLIC-FACING creator listing — what users browse on the
+// home page and view on /user/creator/:id. Mirrors the static
+// `client/src/lib/creatorsData.ts` shape so the frontend can swap to
+// API-backed data with no UI changes.
+//
+// Intentionally separate from `creator_agent_profiles` (the production-grade
+// KYC/approval table). They overlap on (mobileNumber, name) and should
+// converge in a future schema unification PR — for now, the demo uses this
+// simpler table and seeds 9 creators that match the existing static data.
+// =====================================================================
+export const creatorProfiles = pgTable("creator_profiles", {
+  // ID is set explicitly (not defaulted to gen_random_uuid) so we can
+  // match the static creatorsData.ts IDs ("1" through "9").
+  id: varchar("id").primaryKey(),
+  mobileNumber: text("mobile_number").notNull().unique(),
+  name: text("name").notNull(),
+  country: text("country").notNull().default("India"),
+  followers: integer("followers").notNull().default(0),
+  pricePerMinute: integer("price_per_minute").notNull(),
+  // Stored as text "true"/"false" for consistency with other boolean-ish columns.
+  isOnline: text("is_online").notNull().default("true"),
+  randomMatchEnabled: text("random_match_enabled").notNull().default("false"),
+  // 'audio' | 'video' | 'both'
+  allowedCallTypes: text("allowed_call_types").notNull().default("both"),
+  // Arrays stored as JSONB.
+  languages: jsonb("languages").notNull().default(sql`'[]'::jsonb`),
+  aboutMe: text("about_me"),
+  talksAbout: jsonb("talks_about"),
+  hobbies: jsonb("hobbies"),
+  foodPreferences: jsonb("food_preferences"),
+  sportsInterests: jsonb("sports_interests"),
+  photoUrl: text("photo_url"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at").defaultNow().notNull(),
+});
+
+export const insertCreatorProfileSchema = createInsertSchema(creatorProfiles).omit({
+  createdAt: true,
+  updatedAt: true,
+});
+
+export type InsertCreatorProfile = z.infer<typeof insertCreatorProfileSchema>;
+export type CreatorProfile = typeof creatorProfiles.$inferSelect;
