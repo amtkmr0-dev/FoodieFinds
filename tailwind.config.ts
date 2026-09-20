@@ -97,9 +97,9 @@ export default {
           busy: "rgb(239 68 68)",
           offline: "rgb(156 163 175)",
         },
-        success: "hsl(142 70% 45% / <alpha-value>)",
-        warning: "hsl(38 90% 50% / <alpha-value>)",
-        "call-accent": "hsl(180 65% 45% / <alpha-value>)",
+        success: "hsl(var(--success) / <alpha-value>)",
+        warning: "hsl(var(--warning) / <alpha-value>)",
+        "call-accent": "hsl(var(--call-accent) / <alpha-value>)",
       },
       fontFamily: {
         sans: ["var(--font-sans)"],

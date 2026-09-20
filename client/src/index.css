@@ -56,6 +56,11 @@
 
   --primary-foreground: 0 0% 100%;
 
+  /* Brand scheme tokens (overridden by ColorSchemeProvider) */
+  --call-accent: 180 60% 41%;
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
+
   --secondary: 240 4% 90%;
 
   --secondary-foreground: 240 15% 15%;
@@ -175,6 +180,10 @@
   --primary: 245 65% 60%;
 
   --primary-foreground: 0 0% 100%;
+
+  --call-accent: 180 60% 41%;
+  --success: 142 71% 45%;
+  --warning: 38 92% 50%;
 
   --secondary: 240 6% 18%;
 
