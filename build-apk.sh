@@ -27,21 +27,21 @@ build_web_app() {
     echo "📦 Building mobile web application..."
     cd "$APP_DIR"
 
-    if [ -z "${NEXT_PUBLIC_API_URL:-}" ]; then
-        echo "⚠️  NEXT_PUBLIC_API_URL not set — shared default is https://api.foodiefinds.app"
+    if [ -z "${VITE_API_URL:-}" ]; then
+        echo "⚠️  VITE_API_URL not set — API defaults to same-origin (empty). Set VITE_API_URL to an https:// URL for a remote API."
         echo "⚠️  Set an HTTPS URL before release builds, e.g.:"
-        echo "    export NEXT_PUBLIC_API_URL=https://your-api.example.com"
+        echo "    export VITE_API_URL=https://your-api.example.com"
     else
-        case "$NEXT_PUBLIC_API_URL" in
+        case "$VITE_API_URL" in
             http://*)
-                echo "❌ NEXT_PUBLIC_API_URL must be HTTPS (got: $NEXT_PUBLIC_API_URL)"
+                echo "❌ VITE_API_URL must be HTTPS (got: $VITE_API_URL)"
                 exit 1
                 ;;
             https://*)
-                echo "✅ Using HTTPS API_BASE_URL: $NEXT_PUBLIC_API_URL"
+                echo "✅ Using HTTPS API_BASE_URL: $VITE_API_URL"
                 ;;
             *)
-                echo "❌ NEXT_PUBLIC_API_URL must start with https://"
+                echo "❌ VITE_API_URL must start with https://"
                 exit 1
                 ;;
         esac

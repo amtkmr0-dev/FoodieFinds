@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -52,7 +53,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 
-export default function AccountPage() {
+function AccountPageContent() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const [showRechargeModal, setShowRechargeModal] = useState(false);
@@ -896,4 +897,10 @@ export default function AccountPage() {
       </Dialog>
     </div>
   );
+}
+
+export default function AccountPage() {
+  const user = useRequireAuth();
+  if (!user) return null;
+  return <AccountPageContent />;
 }

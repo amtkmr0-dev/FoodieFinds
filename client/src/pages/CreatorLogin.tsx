@@ -1,3 +1,15 @@
+/**
+ * Creator login page (PR #7: real OTP flow against backend).
+ *
+ * Pre-PR #7: this page was a pure mock - it set localStorage flags and
+ * redirected without ever talking to the server. PR #7 wires it to the
+ * real /api/auth/creator/{send-otp,verify-otp} endpoints.
+ *
+ * Demo phone numbers: 9000000001 .. 9000000009 (see server/storage.ts
+ * MemStorage seed and scripts/seed.ts). The OTP is logged server-side
+ * and ALSO returned in the response body in non-prod for convenience.
+ */
+
 import { useState } from "react";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,6 +20,7 @@ import { Separator } from "@/components/ui/separator";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { Phone, User, Lock, ArrowLeft } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { setAccessToken } from "@/lib/auth";
 
 export default function CreatorLogin() {
   const [, setLocation] = useLocation();
@@ -15,8 +28,10 @@ export default function CreatorLogin() {
   const [mobileNumber, setMobileNumber] = useState("");
   const [otp, setOtp] = useState("");
   const [showOTP, setShowOTP] = useState(false);
+  const [isSending, setIsSending] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(false);
 
-  const handleSendOTP = () => {
+  const handleSendOTP = async () => {
     if (!mobileNumber || mobileNumber.length !== 10) {
       toast({
         title: "Invalid Mobile Number",
@@ -25,15 +40,44 @@ export default function CreatorLogin() {
       });
       return;
     }
-    
-    setShowOTP(true);
-    toast({
-      title: "OTP Sent",
-      description: `OTP has been sent to +91 ${mobileNumber}`,
-    });
+
+    setIsSending(true);
+    try {
+      const res = await fetch("/api/auth/creator/send-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: mobileNumber }),
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "Failed to Send OTP",
+          description: data.error || "Please try again later",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setShowOTP(true);
+      toast({
+        title: "OTP Sent",
+        description: data.otp
+          ? `Demo OTP: ${data.otp}` // dev-only convenience: server includes OTP in non-prod
+          : `OTP has been sent to +91 ${mobileNumber}`,
+      });
+    } catch (err: any) {
+      toast({
+        title: "Network Error",
+        description: err.message || "Could not reach the server",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSending(false);
+    }
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     if (!otp || otp.length !== 6) {
       toast({
         title: "Invalid OTP",
@@ -43,13 +87,44 @@ export default function CreatorLogin() {
       return;
     }
 
-    // Mock: Check if new user or existing
-    const isNewUser = localStorage.getItem("creator_registered") !== "true";
-    
-    if (isNewUser) {
-      setLocation("/creator/onboarding");
-    } else {
+    setIsVerifying(true);
+    try {
+      const res = await fetch("/api/auth/creator/verify-otp", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ phone: mobileNumber, otp }),
+        credentials: "include", // refresh-token cookie
+      });
+      const data = await res.json();
+
+      if (!res.ok) {
+        toast({
+          title: "Verification Failed",
+          description: data.error || "Invalid OTP",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      // Persist the JWT in memory + storage (so useRequireAuth and
+      // queryClient pick it up on every subsequent request).
+      setAccessToken(data.accessToken);
+      localStorage.setItem("auth_user", JSON.stringify(data.user));
+
+      toast({
+        title: "Welcome back",
+        description: `Logged in as ${data.user.name}`,
+      });
+
       setLocation("/creator");
+    } catch (err: any) {
+      toast({
+        title: "Network Error",
+        description: err.message || "Could not reach the server",
+        variant: "destructive",
+      });
+    } finally {
+      setIsVerifying(false);
     }
   };
 
@@ -78,7 +153,10 @@ export default function CreatorLogin() {
             </div>
             <CardTitle className="text-2xl font-bold">Creator Login</CardTitle>
             <p className="text-muted-foreground">
-              Join LINKY as a Creator and start earning
+              Sign in as a Creator to see your earnings and call history
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Demo accounts: phone <code className="font-mono">9000000001</code>..<code className="font-mono">9000000009</code>
             </p>
           </CardHeader>
 
@@ -98,7 +176,7 @@ export default function CreatorLogin() {
                     value={mobileNumber}
                     onChange={(e) => setMobileNumber(e.target.value.replace(/\D/g, "").slice(0, 10))}
                     maxLength={10}
-                    disabled={showOTP}
+                    disabled={showOTP || isSending}
                     data-testid="input-mobile-creator"
                   />
                 </div>
@@ -108,9 +186,10 @@ export default function CreatorLogin() {
                 <Button
                   className="w-full"
                   onClick={handleSendOTP}
+                  disabled={isSending}
                   data-testid="button-send-otp-creator"
                 >
-                  Send OTP
+                  {isSending ? "Sending..." : "Send OTP"}
                 </Button>
               ) : (
                 <>
@@ -146,9 +225,10 @@ export default function CreatorLogin() {
                     <Button
                       className="flex-1"
                       onClick={handleLogin}
+                      disabled={isVerifying}
                       data-testid="button-verify-otp-creator"
                     >
-                      Verify & Login
+                      {isVerifying ? "Verifying..." : "Verify & Login"}
                     </Button>
                   </div>
 
@@ -156,6 +236,7 @@ export default function CreatorLogin() {
                     variant="ghost"
                     className="w-full"
                     onClick={handleSendOTP}
+                    disabled={isSending}
                     data-testid="button-resend-otp"
                   >
                     Resend OTP

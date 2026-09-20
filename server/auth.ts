@@ -112,6 +112,88 @@ export function requireRole(...allowedRoles: string[]) {
 }
 
 /**
+ * Granular permissions
+ *
+ * Added per Manus review §3.3 "Lack of Granular Role-Based Access Control".
+ * The previous `requireRole(...)` is still supported but coarse: a single
+ * `admin` role implicitly has every admin power. Permissions let us write
+ * `requirePermission('user:delete')` instead, and gradually narrow the
+ * surface that each role can touch.
+ */
+export const PERMISSIONS = {
+    // Wallet
+    WALLET_READ: 'wallet:read',
+    WALLET_WRITE: 'wallet:write',
+    // Users
+    USER_READ: 'user:read',
+    USER_WRITE: 'user:write',
+    USER_DELETE: 'user:delete',
+    // Creator profiles
+    CREATOR_APPROVE: 'creator:approve',
+    CREATOR_BAN: 'creator:ban',
+    // Pricing / config
+    PRICING_WRITE: 'pricing:write',
+    GIFT_CONFIG_WRITE: 'gift-config:write',
+    // Reports / dashboards
+    REPORTS_VIEW: 'reports:view',
+    SUPPORT_HANDLE: 'support:handle',
+} as const;
+
+export type Permission = typeof PERMISSIONS[keyof typeof PERMISSIONS];
+
+const ROLE_PERMISSIONS: Record<string, Permission[]> = {
+    user: [PERMISSIONS.WALLET_READ],
+    creator: [PERMISSIONS.WALLET_READ],
+    support: [PERMISSIONS.USER_READ, PERMISSIONS.SUPPORT_HANDLE, PERMISSIONS.REPORTS_VIEW],
+    admin: [
+        PERMISSIONS.WALLET_READ,
+        PERMISSIONS.WALLET_WRITE,
+        PERMISSIONS.USER_READ,
+        PERMISSIONS.USER_WRITE,
+        PERMISSIONS.CREATOR_APPROVE,
+        PERMISSIONS.PRICING_WRITE,
+        PERMISSIONS.GIFT_CONFIG_WRITE,
+        PERMISSIONS.REPORTS_VIEW,
+        PERMISSIONS.SUPPORT_HANDLE,
+    ],
+    super_user: Object.values(PERMISSIONS),
+};
+
+export function permissionsForRole(role: string): Permission[] {
+    return ROLE_PERMISSIONS[role] ?? [];
+}
+
+/**
+ * Middleware: ensure the authenticated user has ALL of the listed permissions.
+ *
+ * Usage:
+ *   app.delete('/api/v1/users/:id',
+ *     authenticateToken,
+ *     requirePermission(PERMISSIONS.USER_DELETE),
+ *     handler)
+ */
+export function requirePermission(...required: Permission[]) {
+    return (req: Request, res: Response, next: NextFunction): void => {
+        const user = (req as any).user as JWTPayload | undefined;
+
+        if (!user) {
+            res.status(401).json({ error: 'Authentication required' });
+            return;
+        }
+
+        const granted = new Set(permissionsForRole(user.role));
+        const missing = required.filter((p) => !granted.has(p));
+
+        if (missing.length > 0) {
+            res.status(403).json({ error: 'Insufficient permissions', missing });
+            return;
+        }
+
+        next();
+    };
+}
+
+/**
  * Rate limiting middleware for authentication endpoints
  */
 export function authRateLimit(req: Request, res: Response, next: NextFunction): void {

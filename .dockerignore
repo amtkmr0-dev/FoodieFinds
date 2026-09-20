@@ -1,0 +1,47 @@
+# Don't ship dev artefacts or local junk into the build context.
+.git
+.github
+.vscode
+.idea
+.DS_Store
+.env
+.env.local
+.env.production
+
+# Already built/installed
+node_modules
+dist
+**/node_modules
+**/dist
+
+# Mobile build outputs
+android/app/build
+android/.gradle
+**/android/app/build
+**/android/.gradle
+
+# Large attached/test artefacts
+attached_assets
+**/__tests__/__snapshots__
+**/.turbo
+
+# Documentation that bloats the build context
+*.md
+!README.md
+APK-*.md
+BALANCE-*.md
+BUILD-REPORT-*.md
+CALL-SIMULATION-*.md
+DEPLOYMENT-*.md
+FIREBASE-TEST-LAB-REPORT*.md
+LOW_SEVERITY_BUG_FIXES.md
+PERFORMANCE_METER_IMPLEMENTATION.md
+PROJECT-COMPLETE-SUMMARY.md
+UI-OVERLAPPING-FIXES.md
+
+# Build artefact images
+after-wait.png
+
+# Container artefacts
+Dockerfile
+.dockerignore

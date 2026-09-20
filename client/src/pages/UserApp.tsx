@@ -10,9 +10,10 @@ import { ResponsiveGrid } from "@/components/ResponsiveLayout";
 import { Home, Heart, Shuffle, MessageSquare, User, Video, Phone as PhoneIcon, Users } from "lucide-react";
 import { useLocation } from "wouter";
 import { useWallet } from "@/hooks/useWallet";
+import { useRequireAuth } from "@/hooks/useRequireAuth";
 import { creatorsData, type Creator } from "@/lib/creatorsData";
 
-export default function UserApp() {
+function UserAppContent() {
   const [location, setLocation] = useLocation();
   const { balance } = useWallet();
   const [showIncomingCall, setShowIncomingCall] = useState(false);
@@ -348,4 +349,10 @@ export default function UserApp() {
       </Dialog>
     </div>
   );
+}
+
+export default function UserApp() {
+  const user = useRequireAuth();
+  if (!user) return null;
+  return <UserAppContent />;
 }

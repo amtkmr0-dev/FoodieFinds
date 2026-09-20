@@ -196,14 +196,25 @@ export function CallInterface({
     .toUpperCase()
     .slice(0, 2);
 
+  // Manus §2.1: the client used to send `callCost`, `giftCost`, `totalCost`
+  // and the server trusted the math. Now the client only sends the raw
+  // observations (duration, rate, gift cost) and the server is the SOLE
+  // authority on what to charge. The first-call flag also moves to the
+  // server (was `localStorage.setItem("linky_first_call_completed", ...)`).
   const endCallMutation = useMutation({
-    mutationFn: async (callData: { userId: string; creatorId: string; callType: string; durationSeconds: number; pricePerMinute: number; callCost: number; giftCost: number; totalCost: number }) => {
+    mutationFn: async (callData: {
+      userId: string;
+      creatorId: string;
+      callType: string;
+      durationSeconds: number;
+      pricePerMinute: number;
+      giftCost: number;
+    }) => {
       const response = await apiRequest("POST", "/api/wallet/deduct-call", callData);
       return response.json();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/wallet"] });
-      localStorage.setItem("linky_first_call_completed", "true");
     },
   });
 
@@ -220,30 +231,31 @@ export function CallInterface({
     // BALANCE MONITORING: Reset monitoring state
     balanceMonitor.resetMonitoring();
 
-    // BUG-008 FIX: Include both call cost and gift cost in the total
     endCallMutation.mutate(
       {
-        userId: userId || generateUUID(), // Fallback to generated UUID if null
+        userId: userId || generateUUID(),
         creatorId,
         callType,
         durationSeconds: duration,
         pricePerMinute,
-        callCost,
         giftCost: totalGiftCost,
-        totalCost,
       },
       {
-        onSuccess: () => {
-          let description: string;
+        onSuccess: (data: any) => {
+          // Trust the server's computed totals, not the local estimates.
+          const serverTotal = typeof data?.totalCost === "number" ? data.totalCost : totalCost;
+          const serverCallCost = typeof data?.callCost === "number" ? data.callCost : callCost;
+          const serverGiftCost = typeof data?.giftCost === "number" ? data.giftCost : totalGiftCost;
 
+          let description: string;
           if (callEndedReason === 'negative_balance') {
-            description = `Call ended due to insufficient balance. Cost: ₹${totalCost.toFixed(2)}`;
+            description = `Call ended due to insufficient balance. Cost: ₹${serverTotal.toFixed(2)}`;
           } else if (callEndedReason === 'insufficient_balance') {
-            description = `Call ended as balance reached zero. Cost: ₹${totalCost.toFixed(2)}`;
+            description = `Call ended as balance reached zero. Cost: ₹${serverTotal.toFixed(2)}`;
           } else {
-            const costBreakdown = totalGiftCost > 0
-              ? `Call: ₹${callCost} + Gifts: ₹${totalGiftCost} = ₹${totalCost}`
-              : `₹${totalCost}`;
+            const costBreakdown = serverGiftCost > 0
+              ? `Call: ₹${serverCallCost} + Gifts: ₹${serverGiftCost} = ₹${serverTotal}`
+              : `₹${serverTotal}`;
             description = `${costBreakdown} has been deducted from your wallet.`;
           }
 

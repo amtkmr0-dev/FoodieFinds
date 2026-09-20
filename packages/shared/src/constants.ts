@@ -2,8 +2,50 @@
  * Application constants for FoodieFinds
  */
 
+/**
+ * Resolve the API base URL from the environment.
+ *
+ * Order of resolution (first match wins):
+ *   1. Vite client builds:   `import.meta.env.VITE_API_URL`
+ *   2. Server / Node:        `process.env.API_BASE_URL`
+ *   3. Server / Node legacy: `process.env.VITE_API_URL` (kept for monorepo configs)
+ *   4. Empty string -> same-origin requests (recommended for production
+ *      where the API is reverse-proxied behind the same host)
+ *
+ * The previous implementation hardcoded a public IP address which leaked
+ * infrastructure details and broke if the host changed. Per Manus review
+ * §3.2 we now resolve from environment variables only.
+ */
+function resolveApiBaseUrl(): string {
+    // Vite's `import.meta` is statically replaced at build time; guard with try.
+    try {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const viteEnv = (import.meta as any)?.env
+        if (viteEnv?.VITE_API_URL) return viteEnv.VITE_API_URL as string
+    } catch {
+        // Not a Vite/ESM environment - fall through.
+    }
+
+    if (typeof process !== 'undefined' && process.env) {
+        return (
+            process.env.API_BASE_URL ||
+            process.env.VITE_API_URL ||
+            ''
+        )
+    }
+
+    return ''
+}
+
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.foodiefinds.app'
+// Empty string = same-origin. Non-empty values must be HTTPS (no cleartext).
+const _resolvedApiBaseUrl = resolveApiBaseUrl()
+if (_resolvedApiBaseUrl.startsWith('http://')) {
+    throw new Error(
+        `API_BASE_URL must be HTTPS (got cleartext: ${_resolvedApiBaseUrl}). Set VITE_API_URL or API_BASE_URL to an https:// URL.`
+    )
+}
+export const API_BASE_URL = _resolvedApiBaseUrl
 export const API_TIMEOUT = 30000 // 30 seconds
 
 // Application Roles
