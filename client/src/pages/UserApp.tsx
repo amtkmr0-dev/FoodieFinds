@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { CreatorCard } from "@/components/CreatorCard";
 import { BalanceDisplay } from "@/components/BalanceDisplay";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { ColorSchemePicker } from "@/components/ColorSchemePicker";
 import { IncomingCallModal } from "@/components/IncomingCallModal";
 import { ResponsiveGrid } from "@/components/ResponsiveLayout";
 import { Home, Heart, Shuffle, MessageSquare, User, Video, Phone as PhoneIcon, Users } from "lucide-react";
@@ -132,6 +133,7 @@ function UserAppContent() {
         <div className="flex items-center justify-between max-w-7xl mx-auto">
           <h1 className="text-lg mobile-m:text-xl font-bold">LINKY</h1>
           <div className="flex items-center gap-2 mobile-m:gap-3">
+            <ColorSchemePicker />
             <BalanceDisplay
               balance={balance}
               onClick={() => setLocation("/user/recharge")}

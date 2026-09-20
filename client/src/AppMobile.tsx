@@ -5,6 +5,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { ColorSchemeProvider } from "@/components/ColorSchemeProvider";
 import { WalletProvider } from "@/hooks/useWallet";
 import UserApp from "@/pages/UserApp";
 import CreatorProfile from "@/pages/CreatorProfile";
@@ -59,7 +60,8 @@ function UserAppMobile() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <ThemeProvider>
+        <ThemeProvider defaultTheme="dark">
+          <ColorSchemeProvider>
           <WalletProvider>
             <div className="min-h-screen bg-background">
               <Switch>
@@ -76,6 +78,7 @@ function UserAppMobile() {
               <Toaster />
             </div>
           </WalletProvider>
+          </ColorSchemeProvider>
         </ThemeProvider>
       </TooltipProvider>
     </QueryClientProvider>
