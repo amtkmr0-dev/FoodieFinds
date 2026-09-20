@@ -41,7 +41,8 @@ export function buildGiftsRouter(): Router {
             amount: totalAmount,
             transactionId: `GIFT${Date.now()}`,
             description: `Gift sent to ${recipientId}`,
-            metadata: { recipientId, giftId, quantity, message },
+            type: 'gift',
+            metadata: { recipientId, giftId, quantity, message, type: 'gift' },
         });
 
         if (result.success) {

@@ -47,6 +47,7 @@ import type {
     StoredTransaction,
     WalletOperation,
     WalletOperationResult,
+    resolveWalletLedgerType,
     CreatorEarningsSummary,
 } from "./storage";
 
@@ -185,20 +186,37 @@ export class DrizzleStorage implements IStorage {
     }
 
     async addToWallet(userId: string, amount: number): Promise<UserWallet> {
-        // Single statement, race-safe via SQL arithmetic.
-        const existing = await this.getWallet(userId);
-        if (!existing) {
-            return this.createWallet(userId, amount);
-        }
-        const [row] = await this.db
-            .update(userWallets)
-            .set({
-                balance: sql`${userWallets.balance} + ${amount.toFixed(2)}`,
-                updatedAt: new Date(),
-            })
-            .where(eq(userWallets.userId, userId))
-            .returning();
-        return rowToWallet(row);
+        // Transaction + FOR UPDATE (create-if-missing) / SQL arithmetic — never
+        // read-modify-write balances in JS floats under concurrency.
+        return this.db.transaction(async (tx) => {
+            const rows = await tx
+                .select()
+                .from(userWallets)
+                .where(eq(userWallets.userId, userId))
+                .for("update")
+                .limit(1);
+
+            if (rows.length === 0) {
+                const [created] = await tx
+                    .insert(userWallets)
+                    .values({
+                        userId,
+                        balance: amount.toFixed(2),
+                    })
+                    .returning();
+                return rowToWallet(created);
+            }
+
+            const [row] = await tx
+                .update(userWallets)
+                .set({
+                    balance: sql`${userWallets.balance} + ${amount.toFixed(2)}`,
+                    updatedAt: new Date(),
+                })
+                .where(eq(userWallets.userId, userId))
+                .returning();
+            return rowToWallet(row);
+        });
     }
 
     async deductFromWallet(userId: string, amount: number): Promise<UserWallet> {
@@ -221,7 +239,7 @@ export class DrizzleStorage implements IStorage {
             const [updated] = await tx
                 .update(userWallets)
                 .set({
-                    balance: (current - amount).toFixed(2),
+                    balance: sql`${userWallets.balance} - ${amount.toFixed(2)}`,
                     updatedAt: new Date(),
                 })
                 .where(eq(userWallets.userId, userId))
@@ -249,22 +267,23 @@ export class DrizzleStorage implements IStorage {
                 }
 
                 const current = parseFloat(rows[0].balance);
-                let next = current;
-                if (operation.operation === "credit") next += operation.amount;
-                else {
-                    if (current < operation.amount) {
-                        return {
-                            success: false,
-                            wallet: rowToWallet(rows[0]),
-                            error: { code: "INSUFFICIENT_FUNDS", message: "Insufficient balance" },
-                        };
-                    }
-                    next -= operation.amount;
+                if (operation.operation === "debit" && current < operation.amount) {
+                    return {
+                        success: false,
+                        wallet: rowToWallet(rows[0]),
+                        error: { code: "INSUFFICIENT_FUNDS", message: "Insufficient balance" },
+                    };
                 }
+
+                const ledgerType = resolveWalletLedgerType(operation);
+                const balanceExpr =
+                    operation.operation === "credit"
+                        ? sql`${userWallets.balance} + ${operation.amount.toFixed(2)}`
+                        : sql`${userWallets.balance} - ${operation.amount.toFixed(2)}`;
 
                 const [updated] = await tx
                     .update(userWallets)
-                    .set({ balance: next.toFixed(2), updatedAt: new Date() })
+                    .set({ balance: balanceExpr, updatedAt: new Date() })
                     .where(eq(userWallets.userId, operation.userId))
                     .returning();
 
@@ -272,7 +291,7 @@ export class DrizzleStorage implements IStorage {
                     .insert(transactions)
                     .values({
                         userId: operation.userId,
-                        type: operation.operation === "credit" ? "recharge" : "call",
+                        type: ledgerType,
                         amount: operation.amount.toFixed(2),
                         currency: "INR",
                         status: "success",
@@ -300,11 +319,14 @@ export class DrizzleStorage implements IStorage {
     async rollbackTransaction(transactionId: string): Promise<boolean> {
         try {
             return await this.db.transaction(async (tx) => {
-                const [txnRow] = await tx
+                // Lock the ledger row first so double-rollback is idempotent.
+                const txnRows = await tx
                     .select()
                     .from(transactions)
                     .where(eq(transactions.transactionId, transactionId))
+                    .for("update")
                     .limit(1);
+                const txnRow = txnRows[0];
                 if (!txnRow || txnRow.status !== "success") return false;
 
                 const txn = rowToTransaction(txnRow);
@@ -317,17 +339,20 @@ export class DrizzleStorage implements IStorage {
                     .limit(1);
                 if (!walletRow) return false;
 
-                const current = parseFloat(walletRow.balance);
-                let next = current;
-                if (txn.type === "recharge" || txn.type === "gift") {
-                    next = current - txn.amount;
-                } else if (txn.type === "call") {
-                    next = current + txn.amount;
+                // recharge/refund were credits → debit on rollback;
+                // call/gift were debits → credit on rollback.
+                let balanceExpr;
+                if (txn.type === "recharge" || txn.type === "refund") {
+                    balanceExpr = sql`${userWallets.balance} - ${Number(txn.amount).toFixed(2)}`;
+                } else if (txn.type === "call" || txn.type === "gift") {
+                    balanceExpr = sql`${userWallets.balance} + ${Number(txn.amount).toFixed(2)}`;
+                } else {
+                    return false;
                 }
 
                 await tx
                     .update(userWallets)
-                    .set({ balance: next.toFixed(2), updatedAt: new Date() })
+                    .set({ balance: balanceExpr, updatedAt: new Date() })
                     .where(eq(userWallets.userId, txn.userId));
 
                 await tx

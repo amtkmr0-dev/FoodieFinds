@@ -41,13 +41,28 @@ export interface StoredTransaction {
   updatedAt: Date;
 }
 
+export type WalletLedgerType = 'recharge' | 'call' | 'gift' | 'refund';
+
 export interface WalletOperation {
   userId: string;
   operation: 'credit' | 'debit';
   amount: number;
   transactionId: string;
   description?: string;
+  /** Ledger row type. When omitted: credit→recharge, debit→call. Gifts must pass 'gift'. */
+  type?: WalletLedgerType;
   metadata?: Record<string, any>;
+}
+
+/** Resolve ledger type for executeWalletOperation inserts. */
+export function resolveWalletLedgerType(operation: WalletOperation): WalletLedgerType {
+  const fromField = operation.type;
+  const fromMeta = operation.metadata?.type ?? operation.metadata?.kind;
+  const candidate = fromField || fromMeta;
+  if (candidate === 'recharge' || candidate === 'call' || candidate === 'gift' || candidate === 'refund') {
+    return candidate;
+  }
+  return operation.operation === 'credit' ? 'recharge' : 'call';
 }
 
 export interface WalletOperationResult {
@@ -496,7 +511,7 @@ export class MemStorage implements IStorage {
       const transaction: StoredTransaction = {
         id: randomUUID(),
         userId: operation.userId,
-        type: operation.operation === 'credit' ? 'recharge' : 'call',
+        type: resolveWalletLedgerType(operation),
         amount: operation.amount,
         currency: 'INR',
         status: 'success',
@@ -540,6 +555,11 @@ export class MemStorage implements IStorage {
     const releaseLock = await this.acquireWalletLock(transaction.userId);
 
     try {
+      // Re-check under lock so double-rollback is a no-op.
+      if (transaction.status !== 'success') {
+        return false;
+      }
+
       const wallet = await this.getWallet(transaction.userId);
       if (!wallet) {
         return false;
@@ -549,11 +569,11 @@ export class MemStorage implements IStorage {
       const currentBalance = wallet.balance;
       let newBalance = currentBalance;
 
-      if (transaction.type === 'recharge' || transaction.type === 'gift') {
-        // Credit transactions need to be debited
+      // Reverse by original direction (not overloaded type labels):
+      // recharge (credit) → debit; call/gift (debit) → credit; refund (credit) → debit.
+      if (transaction.type === 'recharge' || transaction.type === 'refund') {
         newBalance = currentBalance - transaction.amount;
-      } else if (transaction.type === 'call') {
-        // Debit transactions need to be credited
+      } else if (transaction.type === 'call' || transaction.type === 'gift') {
         newBalance = currentBalance + transaction.amount;
       }
 
