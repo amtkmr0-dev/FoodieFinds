@@ -1,4 +1,4 @@
-package com.foodiefinds.user;
+package com.foodiefinds.userapp;
 
 import com.getcapacitor.BridgeActivity;
 

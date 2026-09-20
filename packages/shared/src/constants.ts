@@ -3,7 +3,7 @@
  */
 
 // API Configuration
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://13.234.19.105:5000'
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'https://api.foodiefinds.app'
 export const API_TIMEOUT = 30000 // 30 seconds
 
 // Application Roles
