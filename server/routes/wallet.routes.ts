@@ -196,6 +196,7 @@ export function buildWalletRouter(): Router {
             amount: totalCost,
             transactionId: `CALL${Date.now()}`,
             description: `Call with ${creatorId}`,
+            type: 'call',
             metadata: {
                 creatorId,
                 callType: safeCallType,
@@ -204,6 +205,7 @@ export function buildWalletRouter(): Router {
                 billableMinutes,
                 callCost,
                 giftCost: safeGiftCost,
+                type: 'call',
             },
         });
 
